@@ -133,7 +133,7 @@
   </span>
   <span>
     Built with <a href="https://claude.ai" target="_blank" style="color:inherit;text-decoration:underline;">Claude</a> by Anthropic
-    &middot; <a href="#changelog" onclick="document.getElementById('changelog-modal').classList.add('open');return false;" style="color:inherit;text-decoration:underline;">v0.5</a>
+    &middot; <a href="#changelog" onclick="document.getElementById('changelog-modal').classList.add('open');return false;" style="color:inherit;text-decoration:underline;">v0.6</a>
   </span>
 </footer>
 
@@ -146,11 +146,18 @@
     </div>
     <div style="font-family:var(--font-m);font-size:11px;line-height:1.8;opacity:0.75;">
       <div style="margin-bottom:16px;">
-        <div style="font-weight:500;color:var(--rust);margin-bottom:4px;">v0.5 &mdash; Current</div>
+        <div style="font-weight:500;color:var(--rust);margin-bottom:4px;">v0.6 &mdash; Current</div>
+        <div>&middot; Artist search now uses Spotify only (cleaner results)</div>
+        <div>&middot; Now-playing highlight follows track skips in real time (poll every 2s)</div>
+        <div>&middot; Polling fires immediately on playback start, not after first interval</div>
+        <div>&middot; Removed stale map guard that prevented highlight updates</div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:500;color:var(--ink);opacity:0.5;margin-bottom:4px;">v0.5</div>
         <div>&middot; Now-playing highlight: current track highlighted in rust red</div>
         <div>&middot; Click any track to play from that point, queuing the rest</div>
         <div>&middot; Play icon replaces track number on hover and while playing</div>
-        <div>&middot; Polling every 4s keeps highlight in sync with Spotify</div>
+        <div>&middot; Split into css/ and js/ files, cassette favicon</div>
       </div>
       <div style="margin-bottom:16px;">
         <div style="font-weight:500;color:var(--ink);opacity:0.5;margin-bottom:4px;">v0.4</div>

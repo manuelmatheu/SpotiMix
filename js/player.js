@@ -1,15 +1,29 @@
 // ── Now-playing poll ──────────────────────────────────────────────────────────
-const POLL_INTERVAL = 4000;
+const POLL_INTERVAL = 2000; // 2s — snappy enough to follow skips
 
 function startPolling() {
   stopPolling();
+  // Poll immediately on start, then on interval
+  pollNowPlaying();
   pollTimer = setInterval(pollNowPlaying, POLL_INTERVAL);
 }
 
 function stopPolling() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  // Reset index so next highlight always fires even if same track
   nowPlayingIndex = -1;
 }
+
+function buildUriMap() {
+  const map = {};
+  generatedTracks.forEach((t, i) => {
+    if (!map[t.uri]) map[t.uri] = i;
+  });
+  return map;
+}
+
+let _uriMap = null;
+let _uriMapGeneration = null;
 
 async function pollNowPlaying() {
   try {
@@ -21,26 +35,28 @@ async function pollNowPlaying() {
     if (!data?.item) return;
     const uri = data.item.uri;
 
-    // Build reverse URI→index map once per generation
-    if (!pollNowPlaying._uriMap || pollNowPlaying._generation !== generatedTracks) {
-      pollNowPlaying._uriMap = {};
-      pollNowPlaying._generation = generatedTracks;
-      generatedTracks.forEach((t, i) => {
-        if (!pollNowPlaying._uriMap[t.uri]) pollNowPlaying._uriMap[t.uri] = i;
-      });
+    // Rebuild map if generation changed (new mixtape or reshuffle)
+    if (_uriMapGeneration !== generatedTracks) {
+      _uriMap = buildUriMap();
+      _uriMapGeneration = generatedTracks;
     }
 
-    const idx = pollNowPlaying._uriMap[uri];
-    if (idx !== undefined) highlightNowPlaying(idx);
+    const idx = _uriMap[uri];
+    if (idx !== undefined && idx !== nowPlayingIndex) {
+      highlightNowPlaying(idx);
+    }
   } catch { /* ignore poll errors */ }
 }
 
 function highlightNowPlaying(index) {
-  if (index === nowPlayingIndex) return;
+  // Remove previous highlight
   document.querySelectorAll('.track-item.now-playing').forEach(r => r.classList.remove('now-playing'));
   if (index >= 0) {
     const row = document.getElementById('track-' + index);
-    if (row) { row.classList.add('now-playing'); row.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    if (row) {
+      row.classList.add('now-playing');
+      row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   }
   nowPlayingIndex = index;
 }
@@ -51,6 +67,7 @@ async function playFromTrack(i, silent = false) {
   try {
     const ok = await spotifyPlay(uris);
     if (!ok) throw new Error('no active device');
+    // Highlight immediately — don't wait for next poll tick
     highlightNowPlaying(i);
     startPolling();
     if (!silent) showToast(i === 0 ? `Playing ${generatedTracks.length} tracks` : `Playing from track ${i + 1}`);
@@ -61,5 +78,6 @@ async function playFromTrack(i, silent = false) {
 
 async function autoPlay() {
   if (!generatedTracks.length) return;
-  setTimeout(() => playFromTrack(0, true), 100);
+  // Small delay to ensure DOM has rendered before we highlight track 0
+  setTimeout(() => playFromTrack(0, true), 150);
 }

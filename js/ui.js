@@ -1,4 +1,4 @@
-// ── Artist search (parallel merge) ───────────────────────────────────────────
+// ── Artist search (Spotify only) ──────────────────────────────────────────────
 function debounceSearch(idx, q) {
   clearTimeout(searchTimers[idx]);
   searchTimers[idx] = setTimeout(() => doSearch(idx, q), 300);
@@ -11,53 +11,16 @@ async function doSearch(idx, q) {
   dd.innerHTML = '<div class="autocomplete-loading">Searching…</div>';
 
   try {
-    const [spRes, lfmRes] = await Promise.allSettled([
-      spGet(`/search?type=artist&q=${encodeURIComponent(q)}&limit=5`),
-      lfm({ method: 'artist.search', artist: q, limit: 5 }),
-    ]);
-
-    const spItems  = spRes.status  === 'fulfilled' ? (spRes.value.artists?.items  || []) : [];
-    const lfmRaw   = lfmRes.status === 'fulfilled' ? (lfmRes.value.results?.artistmatches?.artist || []) : [];
-    const lfmItems = Array.isArray(lfmRaw) ? lfmRaw : [lfmRaw];
-
-    renderDropdown(idx, mergeResults(spItems, lfmItems));
+    const data  = await spGet(`/search?type=artist&q=${encodeURIComponent(q)}&limit=6`);
+    const items = data.artists?.items || [];
+    renderDropdown(idx, items.map(a => ({
+      name:  a.name,
+      image: a.images?.[1]?.url || a.images?.[0]?.url || '',
+      sub:   a.followers?.total ? fmtNum(a.followers.total) + ' followers' : '',
+    })));
   } catch {
     dd.innerHTML = '<div class="autocomplete-loading">Error — try again.</div>';
   }
-}
-
-function mergeResults(spItems, lfmItems) {
-  const out  = [];
-  const seen = new Set();
-
-  for (const a of spItems) {
-    const key = norm(a.name);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({
-      name:   a.name,
-      image:  a.images?.[1]?.url || a.images?.[0]?.url || '',
-      sub:    a.followers?.total ? fmtNum(a.followers.total) + ' followers' : '',
-      source: 'spotify',
-    });
-  }
-
-  for (const a of lfmItems) {
-    if (!a?.name) continue;
-    const key = norm(a.name);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const imgs = Array.isArray(a.image) ? a.image : [];
-    const img  = imgs.find(i => i.size === 'medium')?.['#text'] || imgs.find(i => i['#text'])?.['#text'] || '';
-    out.push({
-      name:   a.name,
-      image:  img,
-      sub:    a.listeners ? fmtNum(parseInt(a.listeners)) + ' listeners' : '',
-      source: 'lastfm',
-    });
-  }
-
-  return out.slice(0, 6);
 }
 
 function renderDropdown(idx, items) {
@@ -67,16 +30,12 @@ function renderDropdown(idx, items) {
     const imgEl = a.image
       ? `<img class="autocomplete-thumb" src="${esc(a.image)}" alt="" onerror="this.style.visibility='hidden'" />`
       : `<div class="autocomplete-thumb"></div>`;
-    const badge = a.source === 'spotify'
-      ? `<span class="autocomplete-source src-spotify">Spotify</span>`
-      : `<span class="autocomplete-source src-lastfm">Last.fm</span>`;
     return `<div class="autocomplete-item" onclick="selectArtist(${idx},${i})">
       ${imgEl}
       <div style="flex:1;min-width:0">
         <div class="autocomplete-name">${esc(a.name)}</div>
         ${a.sub ? `<div class="autocomplete-sub">${esc(a.sub)}</div>` : ''}
       </div>
-      ${badge}
     </div>`;
   }).join('');
   dd._items = items;
@@ -171,8 +130,8 @@ async function generate() {
 
     if (trackMode === 'discovery') {
       setProgress(32, 'Finding similar artists…');
-      const activeNames    = active.map(a => a.name);
-      const similarNames   = await getSimilarArtists(activeNames, 3 * active.length);
+      const activeNames     = active.map(a => a.name);
+      const similarNames    = await getSimilarArtists(activeNames, 3 * active.length);
       setProgress(40, `Fetching tracks for ${similarNames.length} similar artists…`);
       const discoveryTracks = await getDiscoveryTracks(similarNames);
       rawTracks['__discovery__'] = discoveryTracks;
@@ -214,7 +173,6 @@ async function generate() {
 
 function reshuffle() {
   stopPolling();
-  pollNowPlaying._uriMap = null;
   generatedTracks = shuffle([...generatedTracks]);
   renderResults();
 }

@@ -8,11 +8,12 @@ A single-page web app that blends the top tracks of up to 3 artists into one shu
 
 ## How it works
 
-1. Search for up to 3 artists (results merged from Spotify + Last.fm)
-2. Choose a track mode: **Top Hits**, **Deep Cuts**, or **Mix**
+1. Search for up to 3 artists via Spotify
+2. Choose a track mode: **Top Hits**, **Deep Cuts**, **Mix**, or **Discovery**
 3. Set how many tracks per artist (1–10)
-4. Hit **Generate Mixtape** — Last.fm fetches the tracks, Spotify matches them
-5. Save the result as a Spotify playlist or add it directly to your queue
+4. Hit **Generate Mixtape** — Last.fm fetches the tracks, Spotify matches and plays them
+5. Click any track to play from that point; the current track is highlighted automatically
+6. Save the result as a Spotify playlist or add it directly to your queue
 
 ### Track modes
 
@@ -21,14 +22,32 @@ A single-page web app that blends the top tracks of up to 3 artists into one shu
 | Top Hits | Last.fm ranks 1–10 by scrobble count |
 | Deep Cuts | Last.fm ranks 11–50 by scrobble count |
 | Mix | Half top hits, half deep cuts |
+| Discovery | Your artists + 2 tracks each from 3 similar artists |
+
+---
+
+## File structure
+
+```
+mixtape/
+├── index.html        — HTML structure only
+├── css/
+│   └── style.css     — All styles
+└── js/
+    ├── config.js     — API keys, shared state
+    ├── spotify.js    — Auth, Spotify API, playback, playlist save
+    ├── lastfm.js     — Last.fm track/similar artist fetching + Spotify matching
+    ├── player.js     — Now-playing polling, highlight, click-to-play
+    └── ui.js         — Search, slots, generate, render, utils, boot
+```
 
 ---
 
 ## Stack
 
 - **Vanilla HTML/JS** — no framework, no build step
-- **Spotify Web API** — PKCE OAuth, playlist creation, queue management
-- **Last.fm API** — artist search, top track data
+- **Spotify Web API** — PKCE OAuth, search, playback, playlist creation
+- **Last.fm API** — artist top tracks, similar artists
 - **GitHub Pages** — static hosting
 
 ---
@@ -44,7 +63,7 @@ A single-page web app that blends the top tracks of up to 3 artists into one shu
 
 ### 2. Configuration
 
-Open `index.html` and update the two constants near the top of the `<script>` block:
+Open `js/config.js` and update the two constants:
 
 ```js
 const SPOTIFY_CLIENT_ID = 'your_spotify_client_id';
@@ -55,30 +74,49 @@ Get a free Last.fm API key at [last.fm/api](https://www.last.fm/api/account/crea
 
 ### 3. Deploy
 
-Push `index.html` to a GitHub repo with Pages enabled (Settings → Pages → Deploy from `main` branch root).
+Push to a GitHub repo with Pages enabled (Settings → Pages → Deploy from `main` branch root).
 
 ---
 
 ## Notes
 
-- Requires a **Spotify Premium** account for queue management
-- Deep Cuts quality depends on how well-scrobbled an artist is on Last.fm — niche artists may have sparse data beyond rank 10
-- Spotify matching can occasionally miss tracks with non-standard characters or alternate titles; unmatched tracks are skipped with a warning shown in the UI
+- Requires a **Spotify Premium** account for playback and queue management
+- Deep Cuts quality depends on how well-scrobbled an artist is on Last.fm
+- Spotify matching can occasionally miss tracks with non-standard characters; unmatched tracks are skipped with a warning
 
 ---
 
 ## Changelog
 
-See the in-app changelog (footer → version link) or [CHANGELOG](#changelog) below.
+### v0.6
+- Artist search now uses Spotify only (faster, cleaner results)
+- Now-playing highlight follows track skips in real time (poll every 2s)
+- Polling fires immediately on playback start, not after first interval
+- Fixed stale map guard that prevented highlight from updating after skips
+
+### v0.5
+- Now-playing highlight: current track shown in rust red
+- Click any track to play from that point, queuing the rest
+- Play icon replaces track number on hover and while playing
+- Split into `css/` and `js/` files for easier maintenance
+- Added cassette 📼 favicon
+
+### v0.4
+- Discovery mode: adds 2 tracks each from 3 similar artists per selection
+- Similar artists sourced from Last.fm, deduplicated across selections
+- Discovery badge on tracks from similar artists
+
+### v0.3
+- Auto-play on generation (starts first track, queues the rest)
+- Fixed 403 error when saving playlists to Spotify
+- Device fallback: targets an available Spotify device if none active
 
 ### v0.2
 - Switched to Last.fm for artist track discovery
 - Deep Cuts defined as Last.fm ranks 11–50 by scrobble count
-- Dual artist search: Spotify + Last.fm results merged and deduplicated
+- Dual artist search: Spotify + Last.fm results merged (later simplified to Spotify-only in v0.6)
 - Optional Last.fm play count display per track
-- Source badges in autocomplete dropdown (Spotify / Last.fm)
 - Spotify track matching with exact artist name preference
-- Unmatched track warning shown in results
 
 ### v0.1
 - Initial build
