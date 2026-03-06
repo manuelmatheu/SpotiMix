@@ -124,28 +124,51 @@ async function savePlaylist() {
   const name     = document.getElementById('playlist-name').value.trim() || 'My Mixtape';
   const desc     = document.getElementById('playlist-desc').value.trim();
   const isPublic = document.getElementById('playlist-public').checked;
+  const saveBtn  = document.querySelector('#save-modal .btn-spotify');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+
   try {
-    const pl = await spPost(`/me/playlists`, { name, description: desc, public: isPublic });
+    const uris = generatedTracks.map(t => t.uri);
+    if (!uris.length) throw new Error('No tracks to save');
+
+    // 1. Create the playlist
+    const plRes = await fetch('https://api.spotify.com/v1/me/playlists', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description: desc, public: isPublic }),
+    });
+    if (!plRes.ok) {
+      const err = await plRes.json().catch(() => ({}));
+      throw new Error(`Create playlist failed (${plRes.status}): ${err?.error?.message || 'unknown'}`);
+    }
+    const pl = await plRes.json();
     if (!pl.id) throw new Error('No playlist ID returned');
-    const uris   = generatedTracks.map(t => t.uri);
-    const chunks = chunkArr(uris, 100);
-    for (const c of chunks) {
-      const res = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks`, {
+
+    // 2. Add tracks in batches of 100
+    for (let i = 0; i < uris.length; i += 100) {
+      const batch = uris.slice(i, i + 100);
+      const addRes = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks`, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uris: c }),
+        body: JSON.stringify({ uris: batch }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(`Adding tracks failed (${res.status}): ${err?.error?.message || 'unknown'}`);
+      if (!addRes.ok) {
+        const err = await addRes.json().catch(() => ({}));
+        throw new Error(`Adding tracks failed (${addRes.status}): ${err?.error?.message || 'unknown'}`);
       }
     }
+
     closeSaveModal();
-    showToast(`"${name}" saved to Spotify!`);
+    showToast(`"${name}" saved with ${uris.length} tracks!`);
+
+    // Open the playlist in Spotify
+    if (pl.external_urls?.spotify) {
+      window.open(pl.external_urls.spotify, '_blank');
+    }
   } catch (e) {
-    closeSaveModal();
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save to Spotify'; }
     if (e.message.includes('403') || e.message.includes('401')) {
-      showError('Permission error. Please disconnect and reconnect Spotify.');
+      showError('Permission error — disconnect and reconnect Spotify.');
     } else {
       showError('Could not save: ' + e.message);
     }
