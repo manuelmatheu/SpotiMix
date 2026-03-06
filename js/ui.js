@@ -1,0 +1,315 @@
+// ── Artist search (parallel merge) ───────────────────────────────────────────
+function debounceSearch(idx, q) {
+  clearTimeout(searchTimers[idx]);
+  searchTimers[idx] = setTimeout(() => doSearch(idx, q), 300);
+}
+
+async function doSearch(idx, q) {
+  const dd = document.getElementById(`dd-${idx}`);
+  if (!q.trim()) { dd.classList.remove('open'); return; }
+  dd.classList.add('open');
+  dd.innerHTML = '<div class="autocomplete-loading">Searching…</div>';
+
+  try {
+    const [spRes, lfmRes] = await Promise.allSettled([
+      spGet(`/search?type=artist&q=${encodeURIComponent(q)}&limit=5`),
+      lfm({ method: 'artist.search', artist: q, limit: 5 }),
+    ]);
+
+    const spItems  = spRes.status  === 'fulfilled' ? (spRes.value.artists?.items  || []) : [];
+    const lfmRaw   = lfmRes.status === 'fulfilled' ? (lfmRes.value.results?.artistmatches?.artist || []) : [];
+    const lfmItems = Array.isArray(lfmRaw) ? lfmRaw : [lfmRaw];
+
+    renderDropdown(idx, mergeResults(spItems, lfmItems));
+  } catch {
+    dd.innerHTML = '<div class="autocomplete-loading">Error — try again.</div>';
+  }
+}
+
+function mergeResults(spItems, lfmItems) {
+  const out  = [];
+  const seen = new Set();
+
+  for (const a of spItems) {
+    const key = norm(a.name);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      name:   a.name,
+      image:  a.images?.[1]?.url || a.images?.[0]?.url || '',
+      sub:    a.followers?.total ? fmtNum(a.followers.total) + ' followers' : '',
+      source: 'spotify',
+    });
+  }
+
+  for (const a of lfmItems) {
+    if (!a?.name) continue;
+    const key = norm(a.name);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const imgs = Array.isArray(a.image) ? a.image : [];
+    const img  = imgs.find(i => i.size === 'medium')?.['#text'] || imgs.find(i => i['#text'])?.['#text'] || '';
+    out.push({
+      name:   a.name,
+      image:  img,
+      sub:    a.listeners ? fmtNum(parseInt(a.listeners)) + ' listeners' : '',
+      source: 'lastfm',
+    });
+  }
+
+  return out.slice(0, 6);
+}
+
+function renderDropdown(idx, items) {
+  const dd = document.getElementById(`dd-${idx}`);
+  if (!items.length) { dd.innerHTML = '<div class="autocomplete-loading">No results.</div>'; return; }
+  dd.innerHTML = items.map((a, i) => {
+    const imgEl = a.image
+      ? `<img class="autocomplete-thumb" src="${esc(a.image)}" alt="" onerror="this.style.visibility='hidden'" />`
+      : `<div class="autocomplete-thumb"></div>`;
+    const badge = a.source === 'spotify'
+      ? `<span class="autocomplete-source src-spotify">Spotify</span>`
+      : `<span class="autocomplete-source src-lastfm">Last.fm</span>`;
+    return `<div class="autocomplete-item" onclick="selectArtist(${idx},${i})">
+      ${imgEl}
+      <div style="flex:1;min-width:0">
+        <div class="autocomplete-name">${esc(a.name)}</div>
+        ${a.sub ? `<div class="autocomplete-sub">${esc(a.sub)}</div>` : ''}
+      </div>
+      ${badge}
+    </div>`;
+  }).join('');
+  dd._items = items;
+}
+
+function selectArtist(idx, i) {
+  const dd = document.getElementById(`dd-${idx}`);
+  artists[idx] = dd._items[i];
+  renderSlot(idx);
+  dd.classList.remove('open');
+}
+
+function removeArtist(idx) { artists[idx] = null; renderSlot(idx); }
+
+// ── Slots ─────────────────────────────────────────────────────────────────────
+function renderAllSlots() {
+  const grid = document.getElementById('artists-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const el = document.createElement('div');
+    el.id = `slot-${i}`; el.className = 'artist-slot';
+    grid.appendChild(el); renderSlot(i);
+  }
+}
+
+function renderSlot(idx) {
+  const slot   = document.getElementById(`slot-${idx}`);
+  const artist = artists[idx];
+  const nums   = ['One','Two','Three'];
+
+  if (artist) {
+    const imgEl = artist.image
+      ? `<img class="artist-avatar" src="${esc(artist.image)}" alt="" onerror="this.outerHTML='<div class=&quot;artist-avatar-placeholder&quot;>${esc(artist.name[0])}</div>'" />`
+      : `<div class="artist-avatar-placeholder">${esc(artist.name[0])}</div>`;
+    slot.className = 'artist-slot filled';
+    slot.innerHTML = `
+      <span class="slot-number">${nums[idx]}</span>
+      <div class="artist-card">
+        ${imgEl}
+        <div class="artist-info">
+          <div class="artist-name">${esc(artist.name)}</div>
+          ${artist.sub ? `<div class="artist-sub">${esc(artist.sub)}</div>` : ''}
+        </div>
+        <button class="remove-artist" onclick="removeArtist(${idx})">&#x2715;</button>
+      </div>`;
+  } else {
+    slot.className = 'artist-slot';
+    slot.innerHTML = `
+      <span class="slot-number">${nums[idx]}</span>
+      <div class="artist-search-wrap">
+        <input class="search-input" id="search-${idx}" type="text" placeholder="Search artist…" autocomplete="off"
+          oninput="debounceSearch(${idx},this.value)"
+          onblur="setTimeout(()=>document.getElementById('dd-${idx}').classList.remove('open'),200)" />
+      </div>
+      <div class="autocomplete-dropdown" id="dd-${idx}"></div>`;
+  }
+}
+
+// ── Options ───────────────────────────────────────────────────────────────────
+function setMode(m, btn) {
+  trackMode = m;
+  document.querySelectorAll('#mode-control .seg-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function adjustTracks(d) {
+  tracksPerArtist = Math.max(1, Math.min(10, tracksPerArtist + d));
+  document.getElementById('track-count').textContent = tracksPerArtist;
+}
+
+function toggleMeta(btn) {
+  showMeta = !showMeta;
+  btn.classList.toggle('on', showMeta);
+  document.getElementById('track-list').classList.toggle('show-meta', showMeta);
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+async function generate() {
+  const active = artists.filter(Boolean);
+  if (!active.length) { showError('Add at least one artist first.'); return; }
+
+  clearError();
+  document.getElementById('status-area').classList.add('visible');
+  document.getElementById('results-section').classList.remove('visible');
+  rawTracks = {};
+
+  try {
+    for (let i = 0; i < active.length; i++) {
+      setProgress(Math.round((i / active.length) * 30), `Fetching Last.fm tracks for ${active[i].name}…`);
+      rawTracks[active[i].name] = await getTracksForArtist(active[i]);
+    }
+
+    if (trackMode === 'discovery') {
+      setProgress(32, 'Finding similar artists…');
+      const activeNames    = active.map(a => a.name);
+      const similarNames   = await getSimilarArtists(activeNames, 3 * active.length);
+      setProgress(40, `Fetching tracks for ${similarNames.length} similar artists…`);
+      const discoveryTracks = await getDiscoveryTracks(similarNames);
+      rawTracks['__discovery__'] = discoveryTracks;
+    }
+
+    const allLfm = Object.values(rawTracks).flat();
+    setProgress(45, `Matching ${allLfm.length} tracks on Spotify…`);
+
+    const CONC = 3;
+    const matched = [];
+    for (let i = 0; i < allLfm.length; i += CONC) {
+      const chunk   = allLfm.slice(i, i + CONC);
+      const results = await Promise.all(chunk.map(matchToSpotify));
+      matched.push(...results);
+      setProgress(45 + Math.round(((i + chunk.length) / allLfm.length) * 50),
+        `Matched ${Math.min(i + CONC, allLfm.length)} / ${allLfm.length}…`);
+    }
+
+    const found   = matched.filter(Boolean);
+    const missing = matched.length - found.length;
+
+    const seen  = new Set();
+    const dedup = found.filter(t => { if (seen.has(t.uri)) return false; seen.add(t.uri); return true; });
+
+    generatedTracks = shuffle(dedup);
+
+    setProgress(100, 'Done!');
+    setTimeout(() => {
+      document.getElementById('status-area').classList.remove('visible');
+      renderResults(missing);
+      autoPlay();
+    }, 400);
+
+  } catch (e) {
+    document.getElementById('status-area').classList.remove('visible');
+    showError('Something went wrong: ' + e.message);
+  }
+}
+
+function reshuffle() {
+  stopPolling();
+  pollNowPlaying._uriMap = null;
+  generatedTracks = shuffle([...generatedTracks]);
+  renderResults();
+}
+
+// ── Modals ────────────────────────────────────────────────────────────────────
+function openSaveModal() {
+  const names = artists.filter(Boolean).map(a => a.name).join(' × ');
+  document.getElementById('playlist-name').value = names ? `${names} — Mixtape` : 'My Mixtape';
+  document.getElementById('playlist-desc').value = `Generated by Mixtape · ${generatedTracks.length} tracks`;
+  document.getElementById('save-modal').classList.add('open');
+}
+function closeSaveModal() { document.getElementById('save-modal').classList.remove('open'); }
+
+// ── Results ───────────────────────────────────────────────────────────────────
+function renderResults(missingCount) {
+  const list = document.getElementById('track-list');
+  document.getElementById('results-count').textContent = `${generatedTracks.length} tracks`;
+  const warn = document.getElementById('match-warning');
+  warn.textContent = missingCount > 0
+    ? `${missingCount} track${missingCount > 1 ? 's' : ''} not found on Spotify` : '';
+
+  list.className = 'track-list' + (showMeta ? ' show-meta' : '');
+  list.innerHTML = generatedTracks.map((t, i) => {
+    const imgEl = t.albumArt
+      ? `<img class="track-thumb" src="${esc(t.albumArt)}" alt="" />`
+      : `<div class="track-thumb"></div>`;
+    const badge = t._type === 'deep'
+      ? `<span class="track-badge badge-deep">Deep</span>`
+      : t._type === 'discovery'
+        ? `<span class="track-badge badge-discovery">Discovery</span>`
+        : `<span class="track-badge badge-top">Top</span>`;
+    const plays = t._playcount
+      ? `<div class="track-scrobbles">${fmtNum(t._playcount)} scrobbles</div>` : '';
+    return `<div class="track-item" id="track-${i}" onclick="playFromTrack(${i})">
+      <div class="track-num-wrap">
+        <span class="track-num">${i+1}</span>
+        <span class="track-play-icon">▶</span>
+      </div>
+      ${imgEl}
+      <div class="track-info">
+        <div class="track-name">${esc(t.name)}</div>
+        <div class="track-artist">${esc(t.artist)}</div>
+        ${plays}
+      </div>
+      ${badge}
+      <span class="track-duration">${msToTime(t.duration)}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('results-section').classList.add('visible');
+  document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function setProgress(pct, msg) {
+  document.getElementById('status-pct').textContent    = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('status-msg').textContent    = msg;
+}
+function showError(m) { const e = document.getElementById('error-msg'); e.textContent = m; e.classList.add('visible'); }
+function clearError()  { document.getElementById('error-msg').classList.remove('visible'); }
+
+let toastT;
+function showToast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function shuffle(a) { const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; }
+function chunkArr(a,n) { const c=[]; for(let i=0;i<a.length;i+=n) c.push(a.slice(i,i+n)); return c; }
+function msToTime(ms) { if(!ms) return '--:--'; const s=Math.floor(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
+function fmtNum(n) { if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(0)+'K'; return String(n); }
+function norm(s) { return String(s).toLowerCase().replace(/[^a-z0-9]/g,''); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+async function init() {
+  const code = new URLSearchParams(window.location.search).get('code');
+  if (code) await exchangeCode(code);
+  else accessToken = sessionStorage.getItem('spotify_token');
+
+  if (accessToken) {
+    try {
+      const me = await spGet('/me');
+      userId = me.id;
+      document.getElementById('username-label').textContent = me.display_name || me.id;
+      document.getElementById('auth-section').classList.add('hidden');
+      document.getElementById('app-section').classList.add('visible');
+      renderAllSlots();
+    } catch {
+      sessionStorage.removeItem('spotify_token');
+    }
+  }
+}
+
+init();
