@@ -181,9 +181,8 @@
 
     /* Now-playing & click-to-play */
     .track-item { cursor: pointer; }
-    .track-item:hover { background: var(--tape); }
-    /* num-wrap is a fixed-size container — layout never shifts */
-    .track-num-wrap { position: relative; width: 22px; height: 20px; flex-shrink: 0; }
+    /* num-wrap: fixed width, stretches to row height so absolutes fill correctly */
+    .track-num-wrap { position: relative; width: 22px; align-self: stretch; flex-shrink: 0; }
     .track-num {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: flex-end;
@@ -197,10 +196,8 @@
       font-size: 11px; color: var(--ink);
       opacity: 0; transition: opacity 100ms;
     }
-    /* hover: fade number out, play icon in */
     .track-item:hover .track-num { opacity: 0; }
     .track-item:hover .track-play-icon { opacity: 1; }
-    /* now-playing: rust highlight, play icon always visible */
     .track-item.now-playing { background: rgba(200,75,31,0.07); }
     .track-item.now-playing .track-name { color: var(--rust); }
     .track-item.now-playing .track-num { opacity: 0; }
@@ -865,15 +862,18 @@ function highlightNowPlaying(index) {
   nowPlayingIndex = index;
 }
 
-async function playFromTrack(i) {
+async function playFromTrack(i, silent = false) {
   const uris = generatedTracks.slice(i).map(t => t.uri);
   if (!uris.length) return;
   try {
-    await fetch('https://api.spotify.com/v1/me/player/play', {
+    // Play first track immediately
+    const res = await fetch('https://api.spotify.com/v1/me/player/play', {
       method: 'PUT',
       headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
       body: JSON.stringify({ uris: [uris[0]] }),
     });
+    if (!res.ok && res.status !== 204) throw new Error('play ' + res.status);
+    // Queue the rest
     for (const uri of uris.slice(1)) {
       await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`, {
         method: 'POST', headers: { Authorization: 'Bearer ' + accessToken },
@@ -881,28 +881,17 @@ async function playFromTrack(i) {
     }
     highlightNowPlaying(i);
     startPolling();
-  } catch { showError('Playback failed. Make sure Spotify is open and active.'); }
+    if (!silent) showToast(i === 0 ? `Playing ${generatedTracks.length} tracks` : `Playing from track ${i + 1}`);
+  } catch {
+    if (!silent) showError('Playback failed. Make sure Spotify is open and active.');
+  }
 }
 
 async function autoPlay() {
   if (!generatedTracks.length) return;
-  try {
-    await fetch('https://api.spotify.com/v1/me/player/play', {
-      method: 'PUT',
-      headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uris: [generatedTracks[0].uri] }),
-    });
-    for (const t of generatedTracks.slice(1)) {
-      await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(t.uri)}`, {
-        method: 'POST', headers: { Authorization: 'Bearer ' + accessToken },
-      });
-    }
-    highlightNowPlaying(0);
-    startPolling();
-    showToast(`Playing ${generatedTracks.length} tracks`);
-  } catch {
-    // Silently fail if no active Spotify device
-  }
+  // Delegate entirely to playFromTrack — same logic, no duplication
+  // Small delay ensures the DOM has rendered track rows before we try to highlight
+  setTimeout(() => playFromTrack(0, true), 100);
 }
 
 async function addToQueue() {
