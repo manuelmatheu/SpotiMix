@@ -121,7 +121,7 @@ async function addToQueue() {
 }
 
 async function savePlaylist() {
-  const name     = document.getElementById('playlist-name').value.trim() || 'My Mixtape';
+  const name     = document.getElementById('playlist-name').value.trim() || 'My SpotiMix';
   const desc     = document.getElementById('playlist-desc').value.trim();
   const isPublic = document.getElementById('playlist-public').checked;
   const saveBtn  = document.querySelector('#save-modal .btn-spotify');
