@@ -247,6 +247,56 @@
 
     .divider { border: none; border-top: 1px solid var(--border-s); margin: 28px 0; }
 
+    /* Saved combos */
+    .combos-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; min-height: 0; }
+    .combos-bar:empty { display: none; }
+    .combos-scroll { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 0; }
+    .combos-scroll:empty + .combo-save-btn { margin-left: 0; }
+
+    .combo-card {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--r); padding: 6px 10px 6px 6px;
+      cursor: pointer; transition: border-color 120ms, box-shadow 120ms, transform 80ms;
+      animation: fadeIn 200ms ease both;
+    }
+    .combo-card:hover { border-color: var(--fg); box-shadow: 2px 2px 0 var(--card-shadow); transform: translate(-1px,-1px); }
+    .combo-card:active { transform: translateY(0); box-shadow: none; }
+
+    .combo-avatars { display: flex; flex-shrink: 0; }
+    .combo-avatars img,
+    .combo-avatars .combo-avatar-ph {
+      width: 24px; height: 24px; border-radius: 50%; object-fit: cover;
+      border: 1.5px solid var(--bg); flex-shrink: 0;
+    }
+    .combo-avatars img:not(:first-child),
+    .combo-avatars .combo-avatar-ph:not(:first-child) { margin-left: -8px; }
+    .combo-avatar-ph {
+      background: var(--tape-bg); display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-d); font-style: italic; font-size: 10px; color: var(--fg); opacity: 0.5;
+    }
+
+    .combo-names { font-family: var(--font-m); font-size: 10px; letter-spacing: 0.04em; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+
+    .combo-remove {
+      background: none; border: none; cursor: pointer; color: var(--fg); opacity: 0;
+      font-size: 12px; line-height: 1; padding: 2px; margin-left: 2px; flex-shrink: 0;
+      transition: opacity 120ms, color 120ms;
+    }
+    .combo-card:hover .combo-remove { opacity: 0.35; }
+    .combo-remove:hover { opacity: 0.9 !important; color: var(--rust); }
+
+    .combo-save-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: none; border: 1.5px dashed var(--border);
+      border-radius: var(--r); padding: 6px 12px 6px 8px;
+      font-family: var(--font-m); font-size: 10px; letter-spacing: 0.08em;
+      color: var(--fg); opacity: 0.4; cursor: pointer;
+      transition: opacity 160ms, border-color 160ms;
+    }
+    .combo-save-btn:hover { opacity: 0.8; border-color: var(--fg); }
+    .combo-save-icon { font-size: 14px; line-height: 1; }
+
     /* Theme toggle */
     .theme-toggle {
       position: absolute; top: 52px; right: 0;

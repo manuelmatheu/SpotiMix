@@ -46,9 +46,85 @@ function selectArtist(idx, i) {
   artists[idx] = dd._items[i];
   renderSlot(idx);
   dd.classList.remove('open');
+  updateComboSaveBtn();
 }
 
-function removeArtist(idx) { artists[idx] = null; renderSlot(idx); }
+function removeArtist(idx) { artists[idx] = null; renderSlot(idx); updateComboSaveBtn(); }
+
+// ── Saved Combos ──────────────────────────────────────────────────────────────
+function loadCombos() {
+  try {
+    const raw = localStorage.getItem('mixtape_combos');
+    if (raw) savedCombos = JSON.parse(raw);
+  } catch { savedCombos = []; }
+}
+
+function persistCombos() {
+  try { localStorage.setItem('mixtape_combos', JSON.stringify(savedCombos)); } catch {}
+}
+
+function comboKey(combo) {
+  return combo.artists.map(a => a.name.toLowerCase()).sort().join('||');
+}
+
+function saveCombo() {
+  const active = artists.filter(Boolean);
+  if (active.length < 2) return;
+
+  const combo = { artists: active.map(a => ({ name: a.name, image: a.image || '', sub: a.sub || '' })) };
+  // Don't save duplicates
+  const key = comboKey(combo);
+  if (savedCombos.some(c => comboKey(c) === key)) {
+    showToast('Combo already saved');
+    return;
+  }
+
+  savedCombos.unshift(combo);
+  persistCombos();
+  renderCombos();
+  showToast('Combo saved!');
+}
+
+function loadCombo(idx) {
+  const combo = savedCombos[idx];
+  if (!combo) return;
+  // Clear all slots, then fill from combo
+  for (let i = 0; i < 3; i++) artists[i] = null;
+  combo.artists.forEach((a, i) => { if (i < 3) artists[i] = { ...a }; });
+  renderAllSlots();
+  updateComboSaveBtn();
+}
+
+function removeCombo(idx, evt) {
+  evt.stopPropagation();
+  savedCombos.splice(idx, 1);
+  persistCombos();
+  renderCombos();
+}
+
+function updateComboSaveBtn() {
+  const active = artists.filter(Boolean).length;
+  const btn = document.getElementById('combo-save-btn');
+  if (btn) btn.style.display = active >= 2 ? '' : 'none';
+}
+
+function renderCombos() {
+  const wrap = document.getElementById('combos-scroll');
+  if (!wrap) return;
+  wrap.innerHTML = savedCombos.map((combo, ci) => {
+    const avatars = combo.artists.map(a =>
+      a.image
+        ? `<img src="${esc(a.image)}" alt="" onerror="this.outerHTML='<span class=\\'combo-avatar-ph\\'>${esc(a.name[0])}</span>'" />`
+        : `<span class="combo-avatar-ph">${esc(a.name[0])}</span>`
+    ).join('');
+    const names = combo.artists.map(a => a.name).join(' × ');
+    return `<div class="combo-card" onclick="loadCombo(${ci})" title="${esc(names)}">
+      <div class="combo-avatars">${avatars}</div>
+      <span class="combo-names">${esc(names)}</span>
+      <button class="combo-remove" onclick="removeCombo(${ci},event)" title="Remove combo">✕</button>
+    </div>`;
+  }).join('');
+}
 
 // ── Slots ─────────────────────────────────────────────────────────────────────
 function renderAllSlots() {
@@ -265,6 +341,8 @@ async function init() {
       document.getElementById('auth-section').classList.add('hidden');
       document.getElementById('app-section').classList.add('visible');
       renderAllSlots();
+      loadCombos();
+      renderCombos();
     } catch {
       sessionStorage.removeItem('spotify_token');
     }

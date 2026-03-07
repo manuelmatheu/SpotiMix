@@ -21,3 +21,4 @@ let pollTimer       = null;
 let uriToIndices    = {};
 const artists       = [null, null, null];
 const searchTimers  = {};
+let savedCombos     = [];  // [{artists: [{name, image, sub},...]}]
