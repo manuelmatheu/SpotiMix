@@ -104,6 +104,41 @@
 
     .section-label { font-family: var(--font-m); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.4; margin-bottom: 12px; }
 
+    /* Entry toggle (Search / Browse) */
+    .entry-header { margin-bottom: 16px; }
+    .entry-toggle {
+      display: inline-flex; background: var(--num-bg); border-radius: 3px; padding: 2px; gap: 2px;
+    }
+    .entry-btn {
+      font-family: var(--font-m); font-size: 10px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      border: none; background: transparent; color: var(--fg); opacity: 0.45;
+      padding: 7px 14px; border-radius: 2px; cursor: pointer; transition: all 120ms;
+    }
+    .entry-btn.active { background: var(--bg); opacity: 1; box-shadow: 0 1px 3px var(--shadow); }
+    [data-theme="dark"] .entry-btn.active { background: var(--fg); color: var(--bg); }
+
+    /* Genre grid */
+    .genre-grid {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;
+    }
+    .genre-chip {
+      font-family: var(--font-m); font-size: 11px; letter-spacing: 0.04em;
+      padding: 8px 14px; border-radius: var(--r);
+      background: var(--surface); border: 1.5px solid var(--border);
+      color: var(--fg); cursor: pointer;
+      transition: border-color 120ms, box-shadow 120ms, transform 80ms, background 120ms;
+      animation: fadeIn 200ms ease both;
+    }
+    .genre-chip:hover {
+      border-color: var(--fg); box-shadow: 2px 2px 0 var(--card-shadow);
+      transform: translate(-1px,-1px);
+    }
+    .genre-chip:active { transform: translateY(0); box-shadow: none; }
+    .genre-chip.selected {
+      background: var(--rust); color: var(--bg); border-color: var(--rust);
+    }
+
     /* Artist slots */
     .artists-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 28px; }
     @media (max-width: 580px) {
@@ -139,6 +174,9 @@
 
       .combo-names { max-width: 100px; }
       .combo-card { padding: 5px 8px 5px 5px; }
+
+      .genre-chip { font-size: 10px; padding: 6px 10px; }
+      .entry-btn { padding: 6px 10px; font-size: 9px; }
 
       .context-text { font-size: 13px; }
 

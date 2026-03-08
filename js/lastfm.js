@@ -66,6 +66,37 @@ async function getTracksForArtist(artist) {
   return [...topHalf, ...deep];
 }
 
+// ── Genre tag browsing ────────────────────────────────────────────────────────
+let cachedTopTags = null;
+
+async function getTopTags() {
+  if (cachedTopTags) return cachedTopTags;
+  try {
+    const data = await lfm({ method: 'tag.getTopTags' });
+    const tags = data.toptags?.tag || [];
+    cachedTopTags = (Array.isArray(tags) ? tags : [tags])
+      .filter(t => t?.name)
+      .map(t => t.name.toLowerCase())
+      .filter(t => t.length > 1 && !t.includes('favourite') && !t.includes('favorite') && !t.includes('seen live') && !t.includes('all'))
+      .slice(0, 40);
+    return cachedTopTags;
+  } catch { return []; }
+}
+
+async function getTopArtistsForTag(tag, limit = 10) {
+  try {
+    const data = await lfm({ method: 'tag.getTopArtists', tag, limit });
+    const artists = data.topartists?.artist || [];
+    return (Array.isArray(artists) ? artists : [artists])
+      .filter(a => a?.name)
+      .map(a => ({
+        name:  a.name,
+        image: a.image?.[2]?.['#text'] || a.image?.[1]?.['#text'] || '',
+        sub:   '',
+      }));
+  } catch { return []; }
+}
+
 // ── Artist tags (for context narrative) ────────────────────────────────────────
 async function getArtistTags(artistName) {
   try {

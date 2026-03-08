@@ -171,6 +171,64 @@ function renderSlot(idx) {
   }
 }
 
+// ── Entry toggle (Search / Browse) ────────────────────────────────────────────
+let entryMode = 'search';
+let genresLoaded = false;
+
+function setEntry(mode) {
+  entryMode = mode;
+  document.getElementById('entry-search').classList.toggle('active', mode === 'search');
+  document.getElementById('entry-browse').classList.toggle('active', mode === 'browse');
+  document.getElementById('entry-search-panel').style.display = mode === 'search' ? '' : 'none';
+  document.getElementById('entry-browse-panel').style.display = mode === 'browse' ? '' : 'none';
+
+  if (mode === 'browse' && !genresLoaded) loadGenres();
+}
+
+async function loadGenres() {
+  const grid = document.getElementById('genre-grid');
+  grid.innerHTML = '<div class="context-loading">Loading genres…</div>';
+
+  const tags = await getTopTags();
+  if (!tags.length) {
+    grid.innerHTML = '<div class="context-loading">Could not load genres.</div>';
+    return;
+  }
+
+  grid.innerHTML = tags.map((t, i) =>
+    `<button class="genre-chip" onclick="selectGenre(this,'${esc(t)}')" style="animation-delay:${Math.min(i * 20, 400)}ms">${esc(t)}</button>`
+  ).join('');
+  genresLoaded = true;
+}
+
+async function selectGenre(chip, tag) {
+  // Visual feedback
+  document.querySelectorAll('.genre-chip.selected').forEach(c => c.classList.remove('selected'));
+  chip.classList.add('selected');
+
+  showToast(`Finding artists for "${tag}"…`);
+
+  const topArtists = await getTopArtistsForTag(tag, 10);
+  if (topArtists.length < 1) {
+    showError(`No artists found for "${tag}".`);
+    return;
+  }
+
+  // Pick 3 (with some randomness so it's not always the same)
+  const shuffled = topArtists.length > 3
+    ? topArtists.sort(() => Math.random() - 0.5).slice(0, 3)
+    : topArtists.slice(0, 3);
+
+  // Fill artist slots
+  for (let i = 0; i < 3; i++) artists[i] = shuffled[i] || null;
+
+  // Switch to search view to show filled slots
+  setEntry('search');
+  renderAllSlots();
+  updateComboSaveBtn();
+  showToast(`${shuffled.length} artists from "${tag}" — hit Generate!`);
+}
+
 // ── Options ───────────────────────────────────────────────────────────────────
 function setMode(m, btn) {
   trackMode = m;

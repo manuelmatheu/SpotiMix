@@ -43,14 +43,28 @@
 
     <div class="error-msg" id="error-msg"></div>
 
-    <p class="section-label">Artists</p>
-    <div class="artists-grid" id="artists-grid"></div>
+    <div class="entry-header">
+      <div class="entry-toggle">
+        <button class="entry-btn active" id="entry-search" onclick="setEntry('search')">Search artists</button>
+        <button class="entry-btn" id="entry-browse" onclick="setEntry('browse')">Browse genres</button>
+      </div>
+    </div>
 
-    <div class="combos-bar" id="combos-bar">
-      <div class="combos-scroll" id="combos-scroll"></div>
-      <button class="combo-save-btn" id="combo-save-btn" onclick="saveCombo()" style="display:none;">
-        <span class="combo-save-icon">+</span> Save combo
-      </button>
+    <div id="entry-search-panel">
+      <div class="artists-grid" id="artists-grid"></div>
+
+      <div class="combos-bar" id="combos-bar">
+        <div class="combos-scroll" id="combos-scroll"></div>
+        <button class="combo-save-btn" id="combo-save-btn" onclick="saveCombo()" style="display:none;">
+          <span class="combo-save-icon">+</span> Save combo
+        </button>
+      </div>
+    </div>
+
+    <div id="entry-browse-panel" style="display:none;">
+      <div class="genre-grid" id="genre-grid">
+        <div class="context-loading" id="genre-loading">Loading genres…</div>
+      </div>
     </div>
 
     <p class="section-label">Options</p>
