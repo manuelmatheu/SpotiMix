@@ -291,7 +291,7 @@
 <script>
 // Theme toggle — runs early to prevent flash
 (function() {
-  const saved = sessionStorage.getItem('mixtape_theme');
+  const saved = localStorage.getItem('mixtape_theme');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const theme = saved || (prefersDark ? 'dark' : 'light');
   if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -310,7 +310,7 @@
     } else {
       document.documentElement.removeAttribute('data-theme');
     }
-    sessionStorage.setItem('mixtape_theme', next);
+    localStorage.setItem('mixtape_theme', next);
     updateThemeIcon(next);
   };
 })();

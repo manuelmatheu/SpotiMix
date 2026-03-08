@@ -29,14 +29,14 @@ async function exchangeCode(code) {
   const d = await res.json();
   if (d.access_token) {
     accessToken = d.access_token;
-    sessionStorage.setItem('spotify_token', accessToken);
+    localStorage.setItem('spotify_token', accessToken);
     sessionStorage.removeItem('pkce_verifier');
     window.history.replaceState({}, '', REDIRECT_URI);
   }
 }
 
 function logout() {
-  sessionStorage.removeItem('spotify_token');
+  localStorage.removeItem('spotify_token');
   accessToken = null; userId = null;
   document.getElementById('auth-section').classList.remove('hidden');
   document.getElementById('app-section').classList.remove('visible');

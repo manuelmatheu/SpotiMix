@@ -634,7 +634,7 @@ document.addEventListener('keydown', e => {
 async function init() {
   const code = new URLSearchParams(window.location.search).get('code');
   if (code) await exchangeCode(code);
-  else accessToken = sessionStorage.getItem('spotify_token');
+  else accessToken = localStorage.getItem('spotify_token');
 
   if (accessToken) {
     try {
@@ -648,7 +648,7 @@ async function init() {
       renderCombos();
       updateKeyStatus();
     } catch {
-      sessionStorage.removeItem('spotify_token');
+      localStorage.removeItem('spotify_token');
     }
   }
 }
