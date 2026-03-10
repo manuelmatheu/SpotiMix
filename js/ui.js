@@ -665,6 +665,10 @@ document.addEventListener('keydown', e => {
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 async function init() {
+  // Load combos regardless of auth state
+  loadCombos();
+  renderCombos();
+
   const code = new URLSearchParams(window.location.search).get('code');
   if (code) await exchangeCode(code);
   else accessToken = localStorage.getItem('spotify_token');
@@ -677,10 +681,26 @@ async function init() {
       document.getElementById('auth-section').classList.add('hidden');
       document.getElementById('app-section').classList.add('visible');
       renderAllSlots();
-      loadCombos();
-      renderCombos();
     } catch {
-      localStorage.removeItem('spotify_token');
+      // Token expired — try refreshing
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        try {
+          const me = await spGet('/me');
+          userId = me.id;
+          document.getElementById('username-label').textContent = me.display_name || me.id;
+          document.getElementById('auth-section').classList.add('hidden');
+          document.getElementById('app-section').classList.add('visible');
+          renderAllSlots();
+        } catch {
+          localStorage.removeItem('spotify_token');
+          localStorage.removeItem('spotify_refresh');
+          accessToken = null;
+        }
+      } else {
+        localStorage.removeItem('spotify_token');
+        accessToken = null;
+      }
     }
   }
 }

@@ -30,13 +30,39 @@ async function exchangeCode(code) {
   if (d.access_token) {
     accessToken = d.access_token;
     localStorage.setItem('spotify_token', accessToken);
+    if (d.refresh_token) localStorage.setItem('spotify_refresh', d.refresh_token);
     sessionStorage.removeItem('pkce_verifier');
     window.history.replaceState({}, '', REDIRECT_URI);
   }
 }
 
+async function refreshAccessToken() {
+  const refresh = localStorage.getItem('spotify_refresh');
+  if (!refresh) return false;
+  try {
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refresh,
+        client_id: SPOTIFY_CLIENT_ID,
+      }),
+    });
+    const d = await res.json();
+    if (d.access_token) {
+      accessToken = d.access_token;
+      localStorage.setItem('spotify_token', accessToken);
+      if (d.refresh_token) localStorage.setItem('spotify_refresh', d.refresh_token);
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
 function logout() {
   localStorage.removeItem('spotify_token');
+  localStorage.removeItem('spotify_refresh');
   accessToken = null; userId = null;
   document.getElementById('auth-section').classList.remove('hidden');
   document.getElementById('app-section').classList.remove('visible');
@@ -44,10 +70,19 @@ function logout() {
 
 // ── Spotify API ───────────────────────────────────────────────────────────────
 async function spGet(path) {
-  const r = await fetch('https://api.spotify.com/v1' + path, {
+  let r = await fetch('https://api.spotify.com/v1' + path, {
     headers: { Authorization: 'Bearer ' + accessToken },
   });
-  if (r.status === 401) { logout(); throw new Error('Token expired'); }
+  if (r.status === 401) {
+    // Try refreshing token before giving up
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      r = await fetch('https://api.spotify.com/v1' + path, {
+        headers: { Authorization: 'Bearer ' + accessToken },
+      });
+    }
+    if (r.status === 401) { logout(); throw new Error('Token expired'); }
+  }
   if (!r.ok) throw new Error('Spotify ' + r.status);
   return r.json();
 }
