@@ -78,6 +78,14 @@ async function playFromTrack(i, silent = false) {
     const ok = await spotifyPlay(uris);
     if (!ok) throw new Error('no device');
 
+    // Turn off repeat so the queue doesn't loop when finished
+    try {
+      await fetch('https://api.spotify.com/v1/me/player/repeat?state=off', {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer ' + accessToken },
+      });
+    } catch { /* non-critical */ }
+
     // Build URI index map over the full list so polling can track any track
     buildUriMap();
     // sessionQueue only contains what we actually sent to Spotify

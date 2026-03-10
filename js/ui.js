@@ -356,7 +356,7 @@ async function generate() {
     const seen  = new Set();
     const dedup = found.filter(t => { if (seen.has(t.uri)) return false; seen.add(t.uri); return true; });
 
-    generatedTracks = shuffle(dedup);
+    generatedTracks = interleaveShuffle(dedup);
 
     // Capture context data before rendering
     const ctxArtists  = [...active];
@@ -381,7 +381,7 @@ async function generate() {
 
 function reshuffle() {
   stopPolling();
-  generatedTracks = shuffle([...generatedTracks]);
+  generatedTracks = interleaveShuffle([...generatedTracks]);
   buildUriMap();
   renderResults();
 }
@@ -453,6 +453,57 @@ function showToast(m) {
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function shuffle(a) { const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; }
+
+// Shuffle that avoids consecutive tracks by the same artist
+function interleaveShuffle(tracks) {
+  if (tracks.length <= 1) return [...tracks];
+
+  // Group by artist
+  const byArtist = {};
+  for (const t of tracks) {
+    const key = norm(t.artist);
+    if (!byArtist[key]) byArtist[key] = [];
+    byArtist[key].push(t);
+  }
+
+  // Shuffle within each artist group
+  const groups = Object.values(byArtist).map(g => shuffle(g));
+  // Sort groups longest first for best interleaving
+  groups.sort((a, b) => b.length - a.length);
+
+  // Round-robin pick from each group
+  const result = [];
+  let round = 0;
+  let placed = true;
+  while (placed) {
+    placed = false;
+    // Shuffle group order each round for variety
+    const order = shuffle([...Array(groups.length).keys()]);
+    for (const gi of order) {
+      if (round < groups[gi].length) {
+        result.push(groups[gi][round]);
+        placed = true;
+      }
+    }
+    round++;
+  }
+
+  // Final pass: fix any remaining adjacent same-artist pairs
+  for (let i = 1; i < result.length; i++) {
+    if (norm(result[i].artist) === norm(result[i - 1].artist)) {
+      // Find the nearest swap candidate
+      for (let j = i + 1; j < result.length; j++) {
+        if (norm(result[j].artist) !== norm(result[i - 1].artist) &&
+            (j + 1 >= result.length || norm(result[j].artist) !== norm(result[j + 1]?.artist))) {
+          [result[i], result[j]] = [result[j], result[i]];
+          break;
+        }
+      }
+    }
+  }
+
+  return result;
+}
 function chunkArr(a,n) { const c=[]; for(let i=0;i<a.length;i+=n) c.push(a.slice(i,i+n)); return c; }
 function msToTime(ms) { if(!ms) return '--:--'; const s=Math.floor(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 function fmtNum(n) { if(n>=1e6) return (n/1e6).toFixed(1)+'M'; if(n>=1e3) return (n/1e3).toFixed(0)+'K'; return String(n); }
