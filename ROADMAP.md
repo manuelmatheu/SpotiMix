@@ -1,27 +1,19 @@
-# SpotiMix — Tag-Powered Discovery Roadmap
+# SpotiMix — Roadmap
 
-A phased rollout of genre tag features that transform SpotiMix from an artist-first mixer into a music discovery engine.
-
----
-
-## Phase 1: Genre Tag Browser ← **UP NEXT**
-
-**Goal:** Click a genre tag, get 3 artists auto-filled, ready to generate.
-
-- Add a "Browse by Genre" toggle as an alternative to artist search
-- Fetch popular tags from Last.fm (`tag.getTopTags`) on load, cache them
-- Display as a grid of clickable tag chips
-- On click: fetch top artists for that tag (`tag.getTopArtists`), pick 3, fill slots
-- Transition smoothly back to the artist view with slots populated
-- User can swap out any of the 3 before generating
-
-**Last.fm endpoints:**
-- `tag.getTopTags` — global popular tags
-- `tag.getTopArtists` — top artists for a given tag
+A phased plan for evolving SpotiMix from a playlist generator into a standalone music discovery app.
 
 ---
 
-## Phase 2: Smart Suggest (Tag-Based 3rd Artist)
+## Phase 1: Genre Tag Browser ✅ **SHIPPED**
+
+- "Browse genres" toggle as alternative entry point
+- Multi-genre selection (up to 3 tags)
+- Last.fm tag discovery → Spotify artist lookup
+- Clickable context tags in "About this mix" panel
+
+---
+
+## Phase 2: Smart Suggest (Tag-Based 3rd Artist) ← **UP NEXT**
 
 **Goal:** After picking 1–2 artists, see their shared tags and click one to auto-fill remaining slots.
 
@@ -70,12 +62,40 @@ A phased rollout of genre tag features that transform SpotiMix from an artist-fi
 
 ---
 
+## Phase 5: Embedded Player
+
+**Goal:** Full in-app audio playback — no need to have Spotify open separately.
+
+**Approach:** Spotify Web Playback SDK + remote control fallback.
+
+- **Embedded player** (primary): Uses the Web Playback SDK to create a Spotify Connect device inside the browser. Audio plays directly in the SpotiMix tab. Requires adding `streaming` to OAuth scopes (one-time re-auth).
+- **Remote control** (fallback): Current behavior — controls an existing Spotify client. Used when the SDK can't initialize (e.g., mobile browsers where the SDK isn't supported).
+
+**Player UI:**
+- Persistent bottom bar: album art, track name/artist, play/pause, prev/next
+- Seekable progress bar with elapsed/remaining time
+- Volume control
+- Track list still highlights current track via polling
+- Smooth transitions between tracks
+
+**Technical notes:**
+- SDK is free, loaded from `sdk.scdn.co/spotify-player.js`
+- ~50 lines to initialize the SDK device
+- SDK provides events: `player_state_changed`, `ready`, `not_ready`
+- Tradeoff: embedded audio stops if the tab is closed; remote control keeps playing independently
+- Mobile browsers have limited SDK support — fallback to remote control is essential
+
+**Cost:** $0 (SDK is free with Premium)
+
+---
+
 ## Design Principles
 
 - **Tags as the connective tissue** — they're what makes "David Bowie + Nick Cave" make sense (shared: art rock, post-punk) and what makes the suggestion of a 3rd artist feel natural
 - **Progressive disclosure** — the genre browser is an entry point, not a replacement. Artist search stays for users who know what they want
 - **Last.fm is the brain** — all tag intelligence comes from community-driven Last.fm data, no AI API needed
 - **Each phase builds on the last** — tag fetching, artist-from-tag logic, and UI patterns are reused across phases
+- **Play everywhere** — embedded player for the full experience, remote control as a reliable fallback
 
 ---
 
