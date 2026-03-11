@@ -2,7 +2,7 @@
 
 A single-page web app that blends the top tracks of up to 3 artists into one shuffled Spotify playlist. Artist discovery is powered by Last.fm; playback and playlist saving use the Spotify Web API.
 
-**Live app → [manuelmatheu.github.io/SpotiMix](https://manuelmatheu.github.io/SpotiMix/)**
+**Live app → [https://spotimix-app.vercel.app/](https://spotimix-app.vercel.app/)**
 
 ---
 
