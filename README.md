@@ -103,6 +103,20 @@ Push to a GitHub repo with Pages enabled (Settings → Pages → Deploy from `ma
 
 ## Changelog
 
+### v1.2
+- Smart Suggest: pick 1–2 artists, see genre tags, click to auto-fill remaining slots
+- Tags ranked by relevance (shared tags first for multi-artist)
+- Suggestions powered by Last.fm tags + Spotify artist search
+- Liner notes rewritten with template pool system (150+ unique combinations)
+
+### v1.1
+- Genre tag browser as alternative entry point (Browse genres tab)
+- Multi-genre selection (up to 3 tags) with Spotify artist lookup
+- Clickable context tags in "About this mix" panel
+- Interleave shuffle (no consecutive same-artist tracks)
+- Spotify repeat disabled after playback starts
+- Refresh token support for persistent login
+
 ### v1.0
 - "About this mix" panel with Last.fm-powered liner notes
 - Narrative built from genre tags, artist bios, shared/unique traits

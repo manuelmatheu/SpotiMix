@@ -182,6 +182,7 @@
 
       .genre-chip { font-size: 10px; padding: 6px 10px; }
       .entry-btn { padding: 6px 10px; font-size: 9px; }
+      .suggest-chip { font-size: 9px; padding: 4px 8px; }
 
       .context-text { font-size: 13px; }
 
@@ -406,6 +407,32 @@
 
     /* Autocomplete keyboard active state */
     .autocomplete-item.ac-active { background: var(--tape-bg); }
+
+    /* Smart suggest */
+    .suggest-bar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 16px; animation: fadeIn 200ms ease both;
+    }
+    .suggest-label {
+      font-family: var(--font-m); font-size: 9px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--fg); opacity: 0.4; flex-shrink: 0;
+    }
+    .suggest-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .suggest-chip {
+      font-family: var(--font-m); font-size: 10px; letter-spacing: 0.04em;
+      padding: 5px 10px; border-radius: var(--r);
+      background: var(--surface); border: 1.5px solid var(--border);
+      color: var(--fg); cursor: pointer;
+      transition: border-color 120ms, background 120ms, transform 80ms;
+      animation: fadeIn 150ms ease both;
+    }
+    .suggest-chip:hover {
+      border-color: var(--rust); color: var(--rust);
+    }
+    .suggest-chip:active { transform: translateY(1px); }
+    .suggest-chip.loading {
+      opacity: 0.4; pointer-events: none;
+    }
 
     /* Saved combos */
     .combos-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; min-height: 0; }

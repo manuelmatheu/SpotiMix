@@ -47,9 +47,10 @@ function selectArtist(idx, i) {
   renderSlot(idx);
   dd.classList.remove('open');
   updateComboSaveBtn();
+  updateSuggest();
 }
 
-function removeArtist(idx) { artists[idx] = null; renderSlot(idx); updateComboSaveBtn(); }
+function removeArtist(idx) { artists[idx] = null; renderSlot(idx); updateComboSaveBtn(); updateSuggest(); }
 
 // ── Saved Combos ──────────────────────────────────────────────────────────────
 function loadCombos() {
@@ -88,11 +89,11 @@ function saveCombo() {
 function loadCombo(idx) {
   const combo = savedCombos[idx];
   if (!combo) return;
-  // Clear all slots, then fill from combo
   for (let i = 0; i < 3; i++) artists[i] = null;
   combo.artists.forEach((a, i) => { if (i < 3) artists[i] = { ...a }; });
   renderAllSlots();
   updateComboSaveBtn();
+  updateSuggest();
 }
 
 function removeCombo(idx, evt) {
@@ -169,6 +170,107 @@ function renderSlot(idx) {
       </div>
       <div class="autocomplete-dropdown" id="dd-${idx}"></div>`;
   }
+}
+
+// ── Smart Suggest ─────────────────────────────────────────────────────────────
+let suggestAbort = 0; // Simple generation counter to discard stale results
+
+async function updateSuggest() {
+  const bar    = document.getElementById('suggest-bar');
+  const chips  = document.getElementById('suggest-chips');
+  const active = artists.filter(Boolean);
+  const empty  = artists.filter(a => a === null).length;
+
+  // Only show when 1-2 artists and at least 1 empty slot
+  if (active.length === 0 || empty === 0) {
+    bar.style.display = 'none';
+    return;
+  }
+
+  bar.style.display = '';
+  chips.innerHTML = '<span class="suggest-chip loading">loading…</span>';
+
+  const gen = ++suggestAbort;
+
+  // Fetch tags for all selected artists
+  const allTags = await Promise.all(active.map(a => getArtistTags(a.name)));
+
+  // Stale check
+  if (gen !== suggestAbort) return;
+
+  // Merge and rank tags
+  const tagCount = {};
+  allTags.flat().forEach(t => {
+    // Filter out generic/meta tags
+    if (['seen live', 'favorites', 'favourite', 'all'].some(x => t.includes(x))) return;
+    tagCount[t] = (tagCount[t] || 0) + 1;
+  });
+
+  // Sort: shared tags first (higher count), then alphabetical
+  const ranked = Object.entries(tagCount)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(e => e[0])
+    .slice(0, 8);
+
+  if (!ranked.length) {
+    bar.style.display = 'none';
+    return;
+  }
+
+  chips.innerHTML = ranked.map((t, i) =>
+    `<button class="suggest-chip" onclick="suggestFromTag(this,'${esc(t)}')" style="animation-delay:${i * 30}ms">${esc(t)}</button>`
+  ).join('');
+}
+
+async function suggestFromTag(chip, tag) {
+  const emptyIdx = artists.findIndex(a => a === null);
+  if (emptyIdx === -1) return;
+
+  // Loading state
+  chip.classList.add('loading');
+  chip.textContent = tag + ' …';
+
+  // Get artist names from Last.fm for this tag
+  const lfmArtists = await getTopArtistsForTag(tag, 15);
+
+  // Filter out already-selected artists
+  const selectedNames = new Set(artists.filter(Boolean).map(a => norm(a.name)));
+  const candidates = lfmArtists.filter(a => !selectedNames.has(norm(a.name)));
+
+  // Shuffle and search Spotify for a match
+  const shuffled = candidates.sort(() => Math.random() - 0.5);
+  let match = null;
+
+  for (const candidate of shuffled.slice(0, 5)) {
+    try {
+      const data = await spGet(`/search?type=artist&q=${encodeURIComponent(candidate.name)}&limit=1`);
+      const item = data.artists?.items?.[0];
+      if (item && norm(item.name) === norm(candidate.name)) {
+        match = {
+          name:  item.name,
+          image: item.images?.[1]?.url || item.images?.[0]?.url || '',
+          sub:   item.followers?.total ? fmtNum(item.followers.total) + ' followers' : '',
+        };
+        break;
+      }
+    } catch { /* skip */ }
+  }
+
+  if (!match) {
+    chip.classList.remove('loading');
+    chip.textContent = tag;
+    showToast(`No match found for "${tag}" — try another`);
+    return;
+  }
+
+  // Fill the empty slot
+  artists[emptyIdx] = match;
+  renderSlot(emptyIdx);
+  updateComboSaveBtn();
+  showToast(`${match.name} added from "${tag}"`);
+
+  // Refresh suggestions (new artist changes the tag pool)
+  updateSuggest();
 }
 
 // ── Entry toggle (Search / Browse) ────────────────────────────────────────────
@@ -276,6 +378,7 @@ async function applyGenres() {
   setEntry('search');
   renderAllSlots();
   updateComboSaveBtn();
+  updateSuggest();
   showToast(`${spotifyMatches.length} artists from ${tags.join(' + ')} — hit Generate!`);
 }
 

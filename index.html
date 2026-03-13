@@ -52,6 +52,11 @@
     <div id="entry-search-panel">
       <div class="artists-grid" id="artists-grid"></div>
 
+      <div class="suggest-bar" id="suggest-bar" style="display:none;">
+        <span class="suggest-label">Suggest from:</span>
+        <div class="suggest-chips" id="suggest-chips"></div>
+      </div>
+
       <div class="combos-bar" id="combos-bar">
         <div class="combos-scroll" id="combos-scroll"></div>
         <button class="combo-save-btn" id="combo-save-btn" onclick="saveCombo()" style="display:none;">
@@ -168,7 +173,7 @@
   </span>
   <span>
     Built with ❤ by Manuel Matheu with <a href="https://claude.ai" target="_blank" style="color:inherit;text-decoration:underline;">Claude</a> by Anthropic
-    &middot; <a href="#changelog" onclick="document.getElementById('changelog-modal').classList.add('open');return false;" style="color:inherit;text-decoration:underline;">v1.0</a>
+    &middot; <a href="#changelog" onclick="document.getElementById('changelog-modal').classList.add('open');return false;" style="color:inherit;text-decoration:underline;">v1.2</a>
   </span>
 </footer>
 
@@ -181,7 +186,22 @@
     </div>
     <div style="font-family:var(--font-m);font-size:11px;line-height:1.8;opacity:0.75;overflow-y:auto;flex:1;">
       <div style="margin-bottom:16px;">
-        <div style="font-weight:500;color:var(--rust);margin-bottom:4px;">v1.0 &mdash; Current</div>
+        <div style="font-weight:500;color:var(--rust);margin-bottom:4px;">v1.2 &mdash; Current</div>
+        <div>&middot; Smart Suggest: pick 1&ndash;2 artists, see genre tags, click to auto-fill remaining slots</div>
+        <div>&middot; Tags ranked by relevance (shared tags first for multi-artist)</div>
+        <div>&middot; Suggestions powered by Last.fm tags + Spotify artist search</div>
+        <div>&middot; Liner notes rewritten with 150+ template combinations</div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:500;color:var(--fg);opacity:0.5;margin-bottom:4px;">v1.1</div>
+        <div>&middot; Genre tag browser as alternative entry point</div>
+        <div>&middot; Multi-genre selection (up to 3 tags)</div>
+        <div>&middot; Clickable context tags in "About this mix" panel</div>
+        <div>&middot; Interleave shuffle (no consecutive same-artist tracks)</div>
+        <div>&middot; Spotify repeat disabled after playback starts</div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-weight:500;color:var(--fg);opacity:0.5;margin-bottom:4px;">v1.0</div>
         <div>&middot; "About this mix" panel with Last.fm-powered liner notes</div>
         <div>&middot; Narrative built from genre tags, artist bios, and shared traits</div>
         <div>&middot; Genre tag chips below the narrative</div>

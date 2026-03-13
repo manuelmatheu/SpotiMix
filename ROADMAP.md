@@ -13,21 +13,17 @@ A phased plan for evolving SpotiMix from a playlist generator into a standalone 
 
 ---
 
-## Phase 2: Smart Suggest (Tag-Based 3rd Artist) ← **UP NEXT**
+## Phase 2: Smart Suggest (Tag-Based 3rd Artist) ✅ **SHIPPED**
 
-**Goal:** After picking 1–2 artists, see their shared tags and click one to auto-fill remaining slots.
-
-- After artist selection, fetch their tags (already done for liner notes)
-- Show shared tags as clickable chips below the artist grid
-- Click a tag → fetch `tag.getTopArtists` → fill empty slot(s) with artists that match
-- Filter out already-selected artists
-- Feels like the app "understands" your taste and completes the thought
-
-**Depends on:** Phase 1 (reuses `tag.getTopArtists` fetch logic)
+- "Suggest from:" bar appears when 1–2 artists selected with empty slots
+- Fetches and ranks tags from selected artists (shared tags first)
+- Click a tag → Last.fm top artists → Spotify lookup → fills next empty slot
+- Filters out already-selected artists
+- Refreshes suggestions as artists are added/removed
 
 ---
 
-## Phase 3: Mood Presets
+## Phase 3: Mood Presets ← **UP NEXT**
 
 **Goal:** One-click mood-based mixes that combine multiple tags.
 
