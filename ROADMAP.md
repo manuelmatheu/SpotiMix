@@ -85,6 +85,48 @@ A phased plan for evolving SpotiMix from a playlist generator into a standalone 
 
 ---
 
+## Phase 6: Cloud-Synced Combos (Supabase)
+
+**Goal:** Saved artist combos persist across devices and sessions, tied to the user's Spotify account.
+
+**Approach:** Supabase JS client called directly from the browser — no backend needed.
+
+- Use the Spotify `user_id` (already available from `/me`) as the row identifier
+- Supabase JS client (`@supabase/supabase-js`) loaded from CDN, initialized with project URL + anon key
+- Combos stored as a JSON column in a single `user_combos` table
+- On login: fetch combos from Supabase, merge with any localStorage combos, deduplicate
+- On save/delete combo: update both localStorage (instant) and Supabase (async)
+- localStorage remains the primary read source for speed; Supabase is the sync layer
+
+**Table schema (draft):**
+
+```
+user_combos
+├── spotify_id  TEXT PRIMARY KEY  — from /me endpoint
+├── combos      JSONB            — [{artists: [{name, image, sub}, ...]}, ...]
+├── updated_at  TIMESTAMPTZ      — auto-updated
+```
+
+**Row Level Security:**
+- Users can only read/write their own row (`spotify_id = auth.uid()` or match against a custom claim)
+- Since we're using Spotify ID (not Supabase Auth), RLS can use a simpler policy: allow all operations where `spotify_id` matches the value passed in the request, validated client-side
+- Alternatively: use Supabase anon key with a service-role insert policy, since the data is non-sensitive (just artist names)
+
+**Sync logic:**
+1. On app init (after Spotify login): `SELECT combos FROM user_combos WHERE spotify_id = ?`
+2. Merge remote combos with local (deduplicate by artist-name set)
+3. On combo save/delete: update localStorage immediately, then `UPSERT` to Supabase
+4. Conflict resolution: last-write-wins (simple, combos are low-conflict)
+
+**Migration from localStorage:**
+- First login after this feature ships: local combos are pushed to Supabase
+- After sync, both sources stay in agreement
+- If Supabase is unreachable, app works normally with localStorage only
+
+**Cost:** Supabase free tier (500MB database, 50K monthly active users) — more than enough
+
+---
+
 ## Design Principles
 
 - **Tags as the connective tissue** — they're what makes "David Bowie + Nick Cave" make sense (shared: art rock, post-punk) and what makes the suggestion of a 3rd artist feel natural
