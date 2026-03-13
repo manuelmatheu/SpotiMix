@@ -191,35 +191,84 @@ async function updateSuggest() {
   chips.innerHTML = '<span class="suggest-chip loading">loading…</span>';
 
   const gen = ++suggestAbort;
+  const activeNames = active.map(a => a.name);
 
-  // Fetch tags for all selected artists
-  const allTags = await Promise.all(active.map(a => getArtistTags(a.name)));
+  // Fetch tags and similar artists in parallel
+  const [allTags, similarNames] = await Promise.all([
+    Promise.all(activeNames.map(getArtistTags)),
+    getSimilarArtists(activeNames, 6),
+  ]);
 
   // Stale check
   if (gen !== suggestAbort) return;
 
+  // Filter out already-selected from similar artists
+  const selectedNorm = new Set(active.map(a => norm(a.name)));
+  const filteredSimilar = similarNames.filter(n => !selectedNorm.has(norm(n))).slice(0, 4);
+
   // Merge and rank tags
   const tagCount = {};
   allTags.flat().forEach(t => {
-    // Filter out generic/meta tags
     if (['seen live', 'favorites', 'favourite', 'all'].some(x => t.includes(x))) return;
     tagCount[t] = (tagCount[t] || 0) + 1;
   });
 
-  // Sort: shared tags first (higher count), then alphabetical
-  const ranked = Object.entries(tagCount)
+  const rankedTags = Object.entries(tagCount)
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(e => e[0])
-    .slice(0, 8);
+    .slice(0, 6);
 
-  if (!ranked.length) {
+  if (!filteredSimilar.length && !rankedTags.length) {
     bar.style.display = 'none';
     return;
   }
 
-  chips.innerHTML = ranked.map((t, i) =>
-    `<button class="suggest-chip" onclick="suggestFromTag(this,'${esc(t)}')" style="animation-delay:${i * 30}ms">${esc(t)}</button>`
-  ).join('');
+  // Build chips: similar artists first, then tags
+  let html = '';
+  let delay = 0;
+
+  filteredSimilar.forEach(name => {
+    html += `<button class="suggest-chip artist-suggest" onclick="suggestArtistByName(this,'${esc(name)}')" style="animation-delay:${delay}ms">${esc(name)}</button>`;
+    delay += 30;
+  });
+
+  rankedTags.forEach(t => {
+    html += `<button class="suggest-chip" onclick="suggestFromTag(this,'${esc(t)}')" style="animation-delay:${delay}ms">${esc(t)}</button>`;
+    delay += 30;
+  });
+
+  chips.innerHTML = html;
+}
+
+async function suggestArtistByName(chip, name) {
+  const emptyIdx = artists.findIndex(a => a === null);
+  if (emptyIdx === -1) return;
+
+  chip.classList.add('loading');
+  chip.textContent = name + ' …';
+
+  try {
+    const data = await spGet(`/search?type=artist&q=${encodeURIComponent(name)}&limit=3`);
+    const items = data.artists?.items || [];
+    const item = items.find(a => norm(a.name) === norm(name)) || items[0];
+
+    if (item) {
+      artists[emptyIdx] = {
+        name:  item.name,
+        image: item.images?.[1]?.url || item.images?.[0]?.url || '',
+        sub:   item.followers?.total ? fmtNum(item.followers.total) + ' followers' : '',
+      };
+      renderSlot(emptyIdx);
+      updateComboSaveBtn();
+      showToast(`${item.name} added`);
+      updateSuggest();
+      return;
+    }
+  } catch { /* fall through */ }
+
+  chip.classList.remove('loading');
+  chip.textContent = name;
+  showToast(`Couldn't find "${name}" on Spotify`);
 }
 
 async function suggestFromTag(chip, tag) {

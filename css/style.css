@@ -430,6 +430,12 @@
       border-color: var(--rust); color: var(--rust);
     }
     .suggest-chip:active { transform: translateY(1px); }
+    .suggest-chip.artist-suggest {
+      border-color: var(--rust); color: var(--rust); font-weight: 500;
+    }
+    .suggest-chip.artist-suggest:hover {
+      background: var(--rust); color: var(--bg);
+    }
     .suggest-chip.loading {
       opacity: 0.4; pointer-events: none;
     }
