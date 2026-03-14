@@ -103,6 +103,11 @@ Push to a GitHub repo with Pages enabled (Settings → Pages → Deploy from `ma
 
 ## Changelog
 
+### v1.3
+- Mood Presets: 10 one-click mood cards (Melancholy, Late Night, Sunday Morning, Raw Energy, Dreamy, Soul Kitchen, Deep Focus, Midnight Jazz, Headbanger, Tropicália)
+- Each mood maps to 2–3 Last.fm tags and auto-sets track mode
+- Smart Suggest now includes similar artists (rust-colored chips) alongside genre tags
+
 ### v1.2
 - Smart Suggest: pick 1–2 artists, see genre tags, click to auto-fill remaining slots
 - Tags ranked by relevance (shared tags first for multi-artist)

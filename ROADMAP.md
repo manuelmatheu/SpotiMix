@@ -23,30 +23,15 @@ A phased plan for evolving SpotiMix from a playlist generator into a standalone 
 
 ---
 
-## Phase 3: Mood Presets ← **UP NEXT**
+## Phase 3: Mood Presets ✅ **SHIPPED**
 
-**Goal:** One-click mood-based mixes that combine multiple tags.
-
-- Curated mood cards above the genre grid: "Melancholy", "Late Night Drive", "Sunday Morning", "Raw Energy", "Dreamy", etc.
-- Each mood maps to 2–3 Last.fm tags (e.g., Melancholy = sad + ambient + shoegaze)
-- On click: fetch top artists across all tags, blend and deduplicate, pick 3
-- Could also set the track mode automatically (e.g., Melancholy → Deep Cuts)
-
-**Mood → tag mapping (draft):**
-
-| Mood | Tags |
-|------|------|
-| Melancholy | sad, ambient, melancholy |
-| Late Night Drive | electronic, chillwave, synthwave |
-| Sunday Morning | acoustic, folk, singer-songwriter |
-| Raw Energy | punk, garage rock, post-punk |
-| Dreamy | shoegaze, dream pop, ethereal |
-| Soul Kitchen | soul, funk, rnb |
-| Deep Focus | post-rock, minimal, instrumental |
+- 10 curated mood cards: Melancholy, Late Night, Sunday Morning, Raw Energy, Dreamy, Soul Kitchen, Deep Focus, Midnight Jazz, Headbanger, Tropicália
+- Each mood maps to 2–3 Last.fm tags + auto-sets track mode
+- One click: sets mode → selects tags → finds artists → fills slots
 
 ---
 
-## Phase 4: Genre Radio / "Feeling Lucky"
+## Phase 4: Genre Radio / "Feeling Lucky" ← **UP NEXT**
 
 **Goal:** Instant mix from a random or selected genre — no artist picking needed.
 
