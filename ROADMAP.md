@@ -31,19 +31,18 @@ A phased plan for evolving SpotiMix from a playlist generator into a standalone 
 
 ---
 
-## Phase 4: Genre Radio / "Feeling Lucky" ← **UP NEXT**
+## Phase 4: Tag Mix / Genre Radio ✅ **SHIPPED**
 
-**Goal:** Instant mix from a random or selected genre — no artist picking needed.
-
-- "I'm Feeling Lucky" button picks a random tag and generates immediately
-- Or select a tag from the browser and hit "Genre Radio" to skip artist selection
-- Fetches 6–10 top artists for the tag, picks tracks from each, shuffles
-- Wider artist pool than the standard 3-artist flow
-- Could become its own track mode alongside Top/Deep/Mix/Discovery
+- Tag Mix: parallel mix creation flow independent from Artist Mix
+- Tracks fetched directly from `tag.getTopTracks` per selected tag
+- Mood presets generate Tag Mix directly (no artist slot step)
+- Tracks-per-tag slider (1–10)
+- "Find artists instead" option preserved for artist-based flow
+- Tag-specific liner notes with dedicated template pool
 
 ---
 
-## Phase 5: Embedded Player
+## Phase 5: Embedded Player ← **UP NEXT**
 
 **Goal:** Full in-app audio playback — no need to have Spotify open separately.
 
