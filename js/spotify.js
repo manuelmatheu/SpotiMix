@@ -119,23 +119,27 @@ async function transferPlayback(deviceId) {
 }
 
 async function spotifyPlay(uris) {
-  // Attempt 1: no device_id (works if a device is already active)
-  let r = await fetch('https://api.spotify.com/v1/me/player/play', {
-    method: 'PUT',
-    headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ uris }),
-  });
-  if (r.ok || r.status === 204) return true;
-
-  // Attempt 2: find a device, transfer playback to it, then play
+  // First, find the active device (or pick one)
   const devices = await getDevices();
-  if (!devices.length) return false;
-  const device = devices.find(d => d.is_active) || devices.find(d => !d.is_restricted) || devices[0];
+  let device = devices.find(d => d.is_active);
 
-  // If no device is active, transfer to it first so Spotify is ready to accept play
-  if (!device.is_active) await transferPlayback(device.id);
+  if (!device) {
+    // No active device — find one and transfer playback to it
+    device = devices.find(d => !d.is_restricted) || devices[0];
+    if (!device) {
+      // Last resort: try playing without device_id (might wake a sleeping client)
+      const r = await fetch('https://api.spotify.com/v1/me/player/play', {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uris }),
+      });
+      return r.ok || r.status === 204;
+    }
+    await transferPlayback(device.id);
+  }
 
-  r = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device.id}`, {
+  // Play on the active device explicitly
+  const r = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device.id}`, {
     method: 'PUT',
     headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
     body: JSON.stringify({ uris }),
