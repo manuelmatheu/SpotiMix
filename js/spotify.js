@@ -119,18 +119,29 @@ async function transferPlayback(deviceId) {
 }
 
 async function spotifyPlay(uris) {
-  // If SDK player is ready, target it
+  // Spotify API has a limit of ~100 URIs per play call
+  const playUris = uris.slice(0, 100);
+
+  // If SDK player is ready, transfer playback to it first then play
   if (sdkReady && sdkDeviceId) {
+    // Ensure the SDK device is active
+    await fetch('https://api.spotify.com/v1/me/player', {
+      method: 'PUT',
+      headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device_ids: [sdkDeviceId], play: false }),
+    });
+    await new Promise(r => setTimeout(r, 300));
+
     const r = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${sdkDeviceId}`, {
       method: 'PUT',
       headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uris }),
+      body: JSON.stringify({ uris: playUris }),
     });
     if (r.ok || r.status === 204) return true;
     // SDK play failed — fall through to remote
   }
 
-  // Remote fallback: find the active device (or pick one)
+  // Remote fallback
   const devices = await getDevices();
   let device = devices.find(d => d.is_active);
 
@@ -140,7 +151,7 @@ async function spotifyPlay(uris) {
       const r = await fetch('https://api.spotify.com/v1/me/player/play', {
         method: 'PUT',
         headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uris }),
+        body: JSON.stringify({ uris: playUris }),
       });
       return r.ok || r.status === 204;
     }
@@ -150,7 +161,7 @@ async function spotifyPlay(uris) {
   const r = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device.id}`, {
     method: 'PUT',
     headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ uris }),
+    body: JSON.stringify({ uris: playUris }),
   });
   return r.ok || r.status === 204;
 }
@@ -227,7 +238,16 @@ function initSDKPlayer() {
   if (!window.Spotify) return;
   sdkPlayer = new Spotify.Player({
     name: 'SpotiMix',
-    getOAuthToken: cb => { cb(accessToken); },
+    getOAuthToken: async cb => {
+      // Always try to provide a fresh token
+      // If the current one works, great; if not, refresh it
+      if (accessToken) {
+        cb(accessToken);
+      } else {
+        const ok = await refreshAccessToken();
+        cb(ok ? accessToken : '');
+      }
+    },
     volume: 0.8,
   });
 
@@ -252,9 +272,16 @@ function initSDKPlayer() {
     console.warn('SDK init error:', message);
     sdkReady = false;
   });
-  sdkPlayer.addListener('authentication_error', ({ message }) => {
+  sdkPlayer.addListener('authentication_error', async ({ message }) => {
     console.warn('SDK auth error:', message);
-    sdkReady = false;
+    // Try refreshing the token and reconnecting
+    const ok = await refreshAccessToken();
+    if (ok && sdkPlayer) {
+      sdkPlayer.disconnect();
+      sdkPlayer.connect();
+    } else {
+      sdkReady = false;
+    }
   });
   sdkPlayer.addListener('account_error', ({ message }) => {
     console.warn('SDK account error (Premium required):', message);
