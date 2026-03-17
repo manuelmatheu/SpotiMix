@@ -27,6 +27,7 @@ async function exchangeCode(code) {
     }),
   });
   const d = await res.json();
+  console.log('Token exchange — granted scopes:', d.scope);
   if (d.access_token) {
     accessToken = d.access_token;
     localStorage.setItem('spotify_token', accessToken);
