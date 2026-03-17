@@ -785,11 +785,89 @@ function renderResults(missingCount) {
       </div>
       ${badge}
       <span class="track-duration">${msToTime(t.duration)}</span>
+      <button class="track-heart" id="heart-${i}" onclick="event.stopPropagation();toggleLikeTrack(${i})" title="Save to Liked Songs">♡</button>
     </div>`;
   }).join('');
 
   document.getElementById('results-section').classList.add('visible');
   document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Check which tracks are already liked
+  checkLikedTracks();
+}
+
+// ── Liked Songs ──────────────────────────────────────────────────────────────
+let likedSet = new Set(); // track IDs that are liked
+
+async function checkLikedTracks() {
+  if (!generatedTracks.length) return;
+  // Spotify API accepts up to 50 IDs per check
+  const ids = generatedTracks.map(t => t.uri.split(':').pop());
+  likedSet.clear();
+  for (let i = 0; i < ids.length; i += 50) {
+    const batch = ids.slice(i, i + 50);
+    try {
+      const r = await fetch(`https://api.spotify.com/v1/me/tracks/contains?ids=${batch.join(',')}`, {
+        headers: { Authorization: 'Bearer ' + accessToken },
+      });
+      if (r.ok) {
+        const results = await r.json();
+        batch.forEach((id, j) => { if (results[j]) likedSet.add(id); });
+      }
+    } catch {}
+  }
+  // Update all heart icons
+  generatedTracks.forEach((t, i) => {
+    const id = t.uri.split(':').pop();
+    const btn = document.getElementById('heart-' + i);
+    if (btn) {
+      btn.classList.toggle('liked', likedSet.has(id));
+      btn.textContent = likedSet.has(id) ? '♥' : '♡';
+    }
+  });
+}
+
+async function toggleLikeTrack(idx) {
+  const t = generatedTracks[idx];
+  if (!t) return;
+  const id = t.uri.split(':').pop();
+  const isLiked = likedSet.has(id);
+
+  try {
+    const r = await fetch(`https://api.spotify.com/v1/me/tracks?ids=${id}`, {
+      method: isLiked ? 'DELETE' : 'PUT',
+      headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+    });
+    if (r.ok || r.status === 200) {
+      if (isLiked) likedSet.delete(id); else likedSet.add(id);
+      const btn = document.getElementById('heart-' + idx);
+      if (btn) {
+        btn.classList.toggle('liked', !isLiked);
+        btn.textContent = !isLiked ? '♥' : '♡';
+      }
+      // Also update player bar heart if this is the current track
+      updatePlayerBarHeart();
+      showToast(isLiked ? 'Removed from Liked Songs' : 'Saved to Liked Songs');
+    }
+  } catch {
+    showError('Could not update Liked Songs.');
+  }
+}
+
+async function toggleLikeCurrentTrack() {
+  if (nowPlayingIndex < 0) return;
+  await toggleLikeTrack(nowPlayingIndex);
+}
+
+function updatePlayerBarHeart() {
+  const btn = document.getElementById('pb-heart');
+  if (!btn || nowPlayingIndex < 0) return;
+  const t = generatedTracks[nowPlayingIndex];
+  if (!t) return;
+  const id = t.uri.split(':').pop();
+  const isLiked = likedSet.has(id);
+  btn.classList.toggle('liked', isLiked);
+  btn.textContent = isLiked ? '♥' : '♡';
 }
 
 // ── UI helpers ────────────────────────────────────────────────────────────────

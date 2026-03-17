@@ -393,6 +393,17 @@
     .badge-discovery { background: var(--fg); color: var(--bg); }
     .track-duration { font-family: var(--font-m); font-size: 11px; opacity: 0.35; flex-shrink: 0; }
 
+    .track-heart {
+      background: none; border: none; cursor: pointer;
+      font-size: 14px; line-height: 1; padding: 4px; flex-shrink: 0;
+      color: var(--fg); opacity: 0.15;
+      transition: opacity 120ms, color 120ms, transform 120ms;
+    }
+    .track-heart:hover { opacity: 0.5; }
+    .track-item:hover .track-heart { opacity: 0.35; }
+    .track-heart.liked { color: var(--rust); opacity: 0.8; }
+    .track-heart.liked:hover { opacity: 1; transform: scale(1.15); }
+
     /* Now-playing & click-to-play */
     .track-item { cursor: pointer; }
     /* num-wrap: fixed width, stretches to row height so absolutes fill correctly */
@@ -471,6 +482,16 @@
     .pb-btn:hover { opacity: 1; }
     .pb-play { font-size: 20px; opacity: 1; }
 
+    .pb-heart {
+      background: none; border: none; cursor: pointer;
+      font-size: 18px; line-height: 1; padding: 4px;
+      color: inherit; opacity: 0.4; flex-shrink: 0;
+      transition: opacity 120ms, color 120ms, transform 120ms;
+    }
+    .pb-heart:hover { opacity: 0.8; }
+    .pb-heart.liked { color: var(--rust); opacity: 1; }
+    .pb-heart.liked:hover { transform: scale(1.15); }
+
     .pb-progress-wrap {
       display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
     }
@@ -489,7 +510,7 @@
     .pb-volume-wrap {
       display: flex; align-items: center; gap: 6px; flex-shrink: 0;
     }
-    .pb-volume-icon { font-size: 12px; opacity: 0.5; }
+    .pb-volume-icon { opacity: 0.5; flex-shrink: 0; }
     .pb-volume {
       width: 70px; height: 4px; -webkit-appearance: none; appearance: none;
       background: rgba(255,255,255,0.15); border-radius: 2px; outline: none;

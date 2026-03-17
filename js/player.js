@@ -73,6 +73,8 @@ function highlightNowPlaying(index) {
     }
   }
   nowPlayingIndex = index;
+  // Update heart in player bar for new track
+  if (typeof updatePlayerBarHeart === 'function') updatePlayerBarHeart();
 }
 
 // ── SDK state change handler ──────────────────────────────────────────────────

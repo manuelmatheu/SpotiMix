@@ -195,6 +195,7 @@
     <div class="pb-name" id="pb-name"></div>
     <div class="pb-artist" id="pb-artist"></div>
   </div>
+  <button class="pb-heart" id="pb-heart" onclick="toggleLikeCurrentTrack()" title="Save to Liked Songs">♡</button>
   <div class="pb-controls">
     <button class="pb-btn" onclick="playerPrev()" title="Previous">⏮</button>
     <button class="pb-btn pb-play" id="pb-play" onclick="playerTogglePlay()" title="Play/Pause">▶</button>
@@ -208,7 +209,7 @@
     <span class="pb-time" id="pb-remaining">-0:00</span>
   </div>
   <div class="pb-volume-wrap">
-    <span class="pb-volume-icon">🔊</span>
+    <svg class="pb-volume-icon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M2 5h2.5L8 2v12L4.5 11H2a1 1 0 01-1-1V6a1 1 0 011-1zm9 .5a4.5 4.5 0 010 5M13 3.5a7.5 7.5 0 010 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
     <input class="pb-volume" type="range" min="0" max="1" step="0.01" value="0.8" oninput="playerVolume(event)" />
   </div>
 </div>
