@@ -843,27 +843,26 @@ async function toggleLikeTrack(idx) {
   const isLiked = likedSet.has(id);
 
   try {
-    let r = await fetch(`https://api.spotify.com/v1/me/tracks?ids=${id}`, {
+    const likeOpts = (token) => ({
       method: isLiked ? 'DELETE' : 'PUT',
-      headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: [id] }),
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify([id]),
     });
+    let r = await fetch(`https://api.spotify.com/v1/me/tracks?ids=${id}`, likeOpts(accessToken));
     if (r.status === 401) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
-        r = await fetch(`https://api.spotify.com/v1/me/tracks?ids=${id}`, {
-          method: isLiked ? 'DELETE' : 'PUT',
-          headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ids: [id] }),
-        });
+        r = await fetch(`https://api.spotify.com/v1/me/tracks?ids=${id}`, likeOpts(accessToken));
       }
     }
     if (!r.ok) {
+      const errBody = await r.text().catch(() => '');
+      console.error('Liked Songs error:', r.status, errBody);
       if (r.status === 403) {
         showError('Permission error — disconnect and reconnect Spotify to enable Liked Songs.');
         return;
       }
-      throw new Error('Spotify ' + r.status);
+      throw new Error('Spotify ' + r.status + (errBody ? ': ' + errBody : ''));
     }
     if (isLiked) likedSet.delete(id); else likedSet.add(id);
     // Update track list heart
