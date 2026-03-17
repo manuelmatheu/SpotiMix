@@ -843,16 +843,14 @@ async function toggleLikeTrack(idx) {
   const isLiked = likedSet.has(id);
 
   try {
-    const likeOpts = (token) => ({
-      method: isLiked ? 'DELETE' : 'PUT',
-      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify([id]),
-    });
-    let r = await fetch(`https://api.spotify.com/v1/me/tracks?ids=${id}`, likeOpts(accessToken));
+    const method = isLiked ? 'DELETE' : 'PUT';
+    const url = `https://api.spotify.com/v1/me/tracks?ids=${id}`;
+    console.log('Like request:', method, url, 'token length:', accessToken?.length);
+    let r = await fetch(url, { method, headers: { Authorization: 'Bearer ' + accessToken } });
     if (r.status === 401) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
-        r = await fetch(`https://api.spotify.com/v1/me/tracks?ids=${id}`, likeOpts(accessToken));
+        r = await fetch(url, { method, headers: { Authorization: 'Bearer ' + accessToken } });
       }
     }
     if (!r.ok) {
