@@ -153,10 +153,10 @@ async function checkLikedTracks(trackIds) {
 
 async function toggleLikeTrack(trackId, currentlyLiked) {
   if (currentlyLiked) {
-    await spDelete('/me/library', { ids: [trackId] });
+    await spDelete('/me/tracks', { ids: [trackId] });
     return false;
   } else {
-    await spPut('/me/library', { ids: [trackId] });
+    await spPut('/me/tracks', { ids: [trackId] });
     return true;
   }
 }

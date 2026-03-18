@@ -83,10 +83,10 @@ function highlightNowPlaying(index) {
 }
 
 function triggerHeartPop(btn) {
-  btn.classList.remove('popping');
-  void btn.offsetWidth; // force reflow to restart animation
-  btn.classList.add('popping');
-  btn.addEventListener('animationend', () => btn.classList.remove('popping'), { once: true });
+  btn.animate(
+    [{ transform: 'scale(1)' }, { transform: 'scale(1.45)', offset: 0.5 }, { transform: 'scale(1)' }],
+    { duration: 320, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }
+  );
 }
 
 function updatePlayerBarHeart(trackId) {
