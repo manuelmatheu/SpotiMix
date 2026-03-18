@@ -97,6 +97,71 @@ async function spPost(path, body) {
   return r.json().catch(() => ({}));
 }
 
+async function spPut(path, body) {
+  let r = await fetch('https://api.spotify.com/v1' + path, {
+    method: 'PUT',
+    headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      r = await fetch('https://api.spotify.com/v1' + path, {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    }
+    if (r.status === 401) { logout(); throw new Error('Token expired'); }
+  }
+  if (!r.ok) throw new Error('Spotify PUT ' + r.status);
+  return r.status === 204 ? {} : r.json().catch(() => ({}));
+}
+
+async function spDelete(path, body) {
+  let r = await fetch('https://api.spotify.com/v1' + path, {
+    method: 'DELETE',
+    headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      r = await fetch('https://api.spotify.com/v1' + path, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    }
+    if (r.status === 401) { logout(); throw new Error('Token expired'); }
+  }
+  if (!r.ok) throw new Error('Spotify DELETE ' + r.status);
+  return {};
+}
+
+async function checkLikedTracks(trackIds) {
+  const liked = new Set();
+  for (let i = 0; i < trackIds.length; i += 50) {
+    const chunk = trackIds.slice(i, i + 50);
+    try {
+      const data = await spGet('/me/tracks/contains?ids=' + chunk.join(','));
+      chunk.forEach((id, j) => { if (data[j]) liked.add(id); });
+    } catch { /* ignore — liked state just won't show */ }
+  }
+  return liked;
+}
+
+async function toggleLikeTrack(trackId, currentlyLiked) {
+  const uri = 'spotify:track:' + trackId;
+  if (currentlyLiked) {
+    await spDelete('/me/library', { uris: [uri] });
+    return false;
+  } else {
+    await spPut('/me/library', { uris: [uri] });
+    return true;
+  }
+}
+
 async function getDevices() {
   try {
     const r = await fetch('https://api.spotify.com/v1/me/player/devices', {

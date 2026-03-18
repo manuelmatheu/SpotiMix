@@ -392,6 +392,19 @@
     .badge-deep { background: var(--sage); color: #fff; }
     .badge-discovery { background: var(--fg); color: var(--bg); }
     .track-duration { font-family: var(--font-m); font-size: 11px; opacity: 0.35; flex-shrink: 0; }
+    .track-heart {
+      background: none; border: none; cursor: pointer;
+      font-size: 14px; color: var(--fg); opacity: 0.2;
+      padding: 4px 2px; flex-shrink: 0; line-height: 1;
+      transition: opacity 100ms, color 100ms, transform 100ms;
+    }
+    .track-heart:hover { opacity: 0.6; }
+    .track-heart.liked { color: var(--rust); opacity: 1; }
+    .track-heart:active { transform: scale(1.35); }
+
+    #pb-heart { font-size: 16px; }
+    #pb-heart.liked { color: var(--rust); opacity: 1; }
+    #pb-heart:active { transform: scale(1.3); }
 
     /* Now-playing & click-to-play */
     .track-item { cursor: pointer; }

@@ -790,12 +790,67 @@ function renderResults(missingCount) {
       </div>
       ${badge}
       <span class="track-duration">${msToTime(t.duration)}</span>
+      <button class="track-heart" id="heart-${i}" onclick="handleTrackHeart(event,${i})" title="Save to Liked Songs">♡</button>
     </div>`;
   }).join('');
 
   document.getElementById('results-section').classList.add('visible');
   document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
+  // Async: fetch liked state and update hearts
+  if (accessToken) {
+    const ids = generatedTracks.map(t => t.uri && t.uri.split(':').pop()).filter(Boolean);
+    checkLikedTracks(ids).then(set => {
+      likedSet = set;
+      generatedTracks.forEach((t, i) => {
+        if (t.uri) updateTrackRowHeart(i, set.has(t.uri.split(':').pop()));
+      });
+      // Sync player bar if a track is already playing
+      if (nowPlayingIndex >= 0 && generatedTracks[nowPlayingIndex] && generatedTracks[nowPlayingIndex].uri) {
+        updatePlayerBarHeart(generatedTracks[nowPlayingIndex].uri.split(':').pop());
+      }
+    }).catch(() => {});
+  }
+}
+
+function updateTrackRowHeart(i, liked) {
+  const btn = document.getElementById('heart-' + i);
+  if (!btn) return;
+  btn.textContent = liked ? '♥' : '♡';
+  btn.classList.toggle('liked', liked);
+}
+
+async function handleTrackHeart(event, i) {
+  event.stopPropagation();
+  if (!accessToken) return;
+  const t = generatedTracks[i];
+  if (!t || !t.uri) return;
+  const trackId = t.uri.split(':').pop();
+  const wasLiked = likedSet.has(trackId);
+  // Optimistic update
+  if (wasLiked) likedSet.delete(trackId); else likedSet.add(trackId);
+  updateTrackRowHeart(i, !wasLiked);
+  // Sync player bar if this is the currently playing track
+  if (nowPlayingIndex >= 0 && generatedTracks[nowPlayingIndex] && generatedTracks[nowPlayingIndex].uri === t.uri) {
+    updatePlayerBarHeart(trackId);
+  }
+  try {
+    const newState = await toggleLikeTrack(trackId, wasLiked);
+    if (newState !== !wasLiked) {
+      if (newState) likedSet.add(trackId); else likedSet.delete(trackId);
+      updateTrackRowHeart(i, newState);
+      if (nowPlayingIndex >= 0 && generatedTracks[nowPlayingIndex] && generatedTracks[nowPlayingIndex].uri === t.uri) {
+        updatePlayerBarHeart(trackId);
+      }
+    }
+  } catch {
+    // Revert on error
+    if (wasLiked) likedSet.add(trackId); else likedSet.delete(trackId);
+    updateTrackRowHeart(i, wasLiked);
+    if (nowPlayingIndex >= 0 && generatedTracks[nowPlayingIndex] && generatedTracks[nowPlayingIndex].uri === t.uri) {
+      updatePlayerBarHeart(trackId);
+    }
+  }
 }
 
 // ── UI helpers ────────────────────────────────────────────────────────────────

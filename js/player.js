@@ -3,6 +3,7 @@ const POLL_INTERVAL = 5000;
 
 let sessionQueue  = new Set();
 let sessionPaused = false;
+let likedSet      = new Set();
 
 function registerUri(uri, index) {
   if (!uriToIndices[uri]) uriToIndices[uri] = [];
@@ -73,6 +74,21 @@ function highlightNowPlaying(index) {
     }
   }
   nowPlayingIndex = index;
+  // Update player bar heart for the newly highlighted track
+  if (index >= 0 && generatedTracks[index] && generatedTracks[index].uri) {
+    updatePlayerBarHeart(generatedTracks[index].uri.split(':').pop());
+  } else {
+    updatePlayerBarHeart(null);
+  }
+}
+
+function updatePlayerBarHeart(trackId) {
+  const btn = document.getElementById('pb-heart');
+  if (!btn) return;
+  const liked = !!(trackId && likedSet.has(trackId));
+  btn.textContent = liked ? '♥' : '♡';
+  btn.classList.toggle('liked', liked);
+  btn.dataset.trackId = trackId || '';
 }
 
 // ── SDK state change handler ──────────────────────────────────────────────────
@@ -236,6 +252,36 @@ function playerSeek(e) {
     sdkPlayer.seek(Math.round(ms));
   } else {
     remoteSeek(ms);
+  }
+}
+
+async function playerLike() {
+  const btn = document.getElementById('pb-heart');
+  if (!btn || !accessToken) return;
+  const trackId = btn.dataset.trackId;
+  if (!trackId) return;
+  const wasLiked = likedSet.has(trackId);
+  // Optimistic update
+  if (wasLiked) likedSet.delete(trackId); else likedSet.add(trackId);
+  btn.textContent = wasLiked ? '♡' : '♥';
+  btn.classList.toggle('liked', !wasLiked);
+  // Sync matching track row
+  if (nowPlayingIndex >= 0) updateTrackRowHeart(nowPlayingIndex, !wasLiked);
+  try {
+    const newState = await toggleLikeTrack(trackId, wasLiked);
+    // Confirm server state
+    if (newState !== !wasLiked) {
+      if (newState) likedSet.add(trackId); else likedSet.delete(trackId);
+      btn.textContent = newState ? '♥' : '♡';
+      btn.classList.toggle('liked', newState);
+      if (nowPlayingIndex >= 0) updateTrackRowHeart(nowPlayingIndex, newState);
+    }
+  } catch {
+    // Revert on error
+    if (wasLiked) likedSet.add(trackId); else likedSet.delete(trackId);
+    btn.textContent = wasLiked ? '♥' : '♡';
+    btn.classList.toggle('liked', wasLiked);
+    if (nowPlayingIndex >= 0) updateTrackRowHeart(nowPlayingIndex, wasLiked);
   }
 }
 
