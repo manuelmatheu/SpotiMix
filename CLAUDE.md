@@ -265,4 +265,34 @@ streaming, user-library-modify, user-library-read
 
 ---
 
+## Claude Code session plan
+
+### Session 1: Bug fixes & polish (quick wins)
+- Fix SDK playback skipping/muting (monitor `authentication_error`, test token refresh cycle)
+- Verify heart/like works after re-auth with new scopes
+- Test mobile responsive layout end-to-end (post-login viewport, player bar wrapping)
+
+### Session 2: Phase 6 — Cloud-Synced Combos (Supabase)
+- Prerequisite: create a Supabase project + `user_combos` table
+- Load `@supabase/supabase-js` from CDN
+- Add `supabase.js` file: init client, `fetchCombos()`, `syncCombos()`, `upsertCombos()`
+- Modify `loadCombos()` in ui.js: fetch from Supabase after Spotify login, merge with localStorage
+- Modify `persistCombos()`: write to both localStorage (instant) and Supabase (async)
+- Handle offline gracefully (localStorage-only mode)
+- Test: save combo on desktop → see it on mobile
+
+### Session 3: UX improvements
+- Liked songs heart animation (brief scale pulse on toggle)
+- Loading skeleton for genre grid while tags load
+- "Now playing" mini-indicator in browser tab title (`♫ Track — Artist | SpotiMix`)
+- Reshuffle button should also work for Tag Mix results
+
+### Session 4: Future features to consider
+- Last.fm scrobbling (requires Last.fm OAuth — separate auth flow)
+- Playlist artwork generation (collage from album arts)
+- Share a mix via URL (encode artist/tag names in query params)
+- Queue management (reorder tracks, remove individual tracks)
+
+---
+
 *This file is for Claude Code / AI-assisted development. Keep it updated when making architectural changes.*

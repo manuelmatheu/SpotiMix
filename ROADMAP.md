@@ -106,4 +106,34 @@ user_combos
 
 ---
 
+## Bug fixes & polish (ongoing)
+
+- Fix SDK playback skipping/muting (monitor `authentication_error`, test token refresh cycle)
+- Verify heart/like works after re-auth with new scopes
+- Test mobile responsive layout end-to-end (post-login viewport, player bar wrapping)
+
+---
+
+## Phase 7: UX improvements
+
+**Goal:** Small touches that make the app feel more polished.
+
+- Liked songs heart animation (brief scale pulse on toggle)
+- Loading skeleton for genre grid while tags load
+- "Now playing" mini-indicator in browser tab title (`♫ Track — Artist | SpotiMix`)
+- Reshuffle button should also work for Tag Mix results
+
+---
+
+## Phase 8: Future features to consider
+
+**Ideas for future sessions — not committed, open to discussion.**
+
+- **Last.fm scrobbling** — requires Last.fm OAuth (separate auth flow), would record plays to user's Last.fm profile
+- **Playlist artwork generation** — collage from album arts of the tracks in the mix
+- **Share a mix via URL** — encode artist names or tag names in query params, recipient opens SpotiMix with pre-filled slots
+- **Queue management** — reorder tracks, remove individual tracks before playing
+
+---
+
 *Built with [Claude](https://claude.ai) by Anthropic*
