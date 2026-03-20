@@ -270,40 +270,42 @@ async function savePlaylist() {
     const pl = await plRes.json();
     if (!pl.id) throw new Error('No playlist ID returned');
 
-    // 2. Add tracks in batches of 100
-    let addOk = true;
+    // 2. Add tracks in batches of 100 (with 401 retry)
     for (let i = 0; i < uris.length; i += 100) {
-      const addRes = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks`, {
+      const batch = uris.slice(i, i + 100);
+      let addRes = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks`, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uris: uris.slice(i, i + 100) }),
+        body: JSON.stringify({ uris: batch }),
       });
-      if (!addRes.ok) { addOk = false; break; }
+      if (addRes.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+          addRes = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks`, {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uris: batch }),
+          });
+        }
+      }
+      if (!addRes.ok) {
+        const err = await addRes.json().catch(() => ({}));
+        console.error('Add tracks error body:', JSON.stringify(err));
+        throw new Error(`Adding tracks failed (${addRes.status}): ${err?.error?.message || 'unknown'}`);
+      }
     }
 
-    if (addOk) {
-      showToast(`"${name}" saved with ${uris.length} tracks!`);
-      if (saveBtn && pl.external_urls?.spotify) {
-        const url = pl.external_urls.spotify;
-        saveBtn.textContent = 'Saved! ↗';
-        saveBtn.className = 'btn btn-spotify btn-save';
-        saveBtn.disabled = false;
-        saveBtn.onclick = () => window.open(url, '_blank');
-      }
-    } else {
-      // Dev mode fallback: copy URIs to clipboard, open empty playlist
-      await navigator.clipboard.writeText(uris.join('\n')).catch(() => {});
-      if (pl.external_urls?.spotify) window.open(pl.external_urls.spotify, '_blank');
-      showToast('Playlist created — track URIs copied to clipboard (Spotify dev mode limit).');
-      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save to Spotify'; }
+    showToast(`"${name}" saved with ${uris.length} tracks!`);
+    if (saveBtn && pl.external_urls?.spotify) {
+      const url = pl.external_urls.spotify;
+      saveBtn.textContent = 'Saved! ↗';
+      saveBtn.className = 'btn btn-spotify btn-save';
+      saveBtn.disabled = false;
+      saveBtn.onclick = () => window.open(url, '_blank');
     }
   } catch (e) {
     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save to Spotify'; }
-    if (e.message.includes('403') || e.message.includes('401')) {
-      showError('Permission error — disconnect and reconnect Spotify.');
-    } else {
-      showError('Could not save: ' + e.message);
-    }
+    showError('Could not save: ' + e.message);
   }
 }
 
