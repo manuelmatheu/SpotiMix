@@ -273,8 +273,10 @@ async function savePlaylist() {
     // 2. Add tracks in batches of 100 (with 401 retry)
     for (let i = 0; i < uris.length; i += 100) {
       const batch = uris.slice(i, i + 100);
+      // PUT replaces tracks (equivalent to POST for empty playlist); try PUT first
+      const method = i === 0 ? 'PUT' : 'POST';
       let addRes = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks`, {
-        method: 'POST',
+        method,
         headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
         body: JSON.stringify({ uris: batch }),
       });
@@ -282,7 +284,7 @@ async function savePlaylist() {
         const refreshed = await refreshAccessToken();
         if (refreshed) {
           addRes = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks`, {
-            method: 'POST',
+            method,
             headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
             body: JSON.stringify({ uris: batch }),
           });
