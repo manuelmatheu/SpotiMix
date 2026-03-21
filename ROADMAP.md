@@ -96,13 +96,25 @@ A phased plan for evolving SpotiMix from a playlist generator into a standalone 
 
 ---
 
-## Phase 8: Future features to consider
+## Phase 8: Share Mix via URL ← **UP NEXT**
+
+**Goal:** Users can share a generated mix via a URL. Recipients open the link, log in, and get the same mix auto-generated.
+
+- Share button in results area (alongside Save/Queue/Reshuffle)
+- URL query params encode artist names (or genre tags), track mode, tracks-per-artist/tag
+- `sessionStorage` bridges share params through OAuth redirect (for not-yet-logged-in recipients)
+- Native share sheet on mobile (`navigator.share`), clipboard copy on desktop
+- Auto-generate on load when `auto=1` param present; otherwise pre-fill slots only
+- No backend, no database — pure URL encoding
+
+---
+
+## Phase 9: Future features to consider
 
 **Ideas for future sessions — not committed, open to discussion.**
 
 - **Last.fm scrobbling** — requires Last.fm OAuth (separate auth flow), would record plays to user's Last.fm profile
 - **Playlist artwork generation** — collage from album arts of the tracks in the mix
-- **Share a mix via URL** — encode artist names or tag names in query params, recipient opens SpotiMix with pre-filled slots
 - **Queue management** — reorder tracks, remove individual tracks before playing
 
 ---
