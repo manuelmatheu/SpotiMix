@@ -38,7 +38,25 @@ https://spotimix-app.vercel.app/?tags=shoegaze,dream%20pop,post-punk&tcount=5&au
 | `tcount` | number | no | `5` | Tracks per tag |
 | `auto` | string | no | — | If `1`, auto-generate on load |
 
-If both `artists` and `tags` are present, `artists` wins.
+If both `artists` and `tags` are present, `artists` wins. More than 3 artists or tags: take the first 3, ignore the rest.
+
+## Share Params Persistence Through OAuth
+
+When a recipient opens a share URL without being logged in:
+
+1. They land on `?artists=Radiohead,Portishead&mode=deep&auto=1`
+2. They click "Connect with Spotify"
+3. Spotify redirects back with `?code=...` — the share params are lost
+
+**Solution:** Before calling `startAuth()`, persist share params in `sessionStorage`:
+
+```
+sessionStorage.setItem('share_params', window.location.search)
+```
+
+In `loadFromShareParams()`, check `sessionStorage` first, then fall back to `URLSearchParams(window.location.search)`. Clear the stored value after consumption.
+
+This is the only change needed in `spotify.js` — a single `sessionStorage.setItem` call at the top of `startAuth()`.
 
 ## Share Button
 
@@ -50,12 +68,27 @@ If both `artists` and `tags` are present, `artists` wins.
 
 **Behavior:**
 1. `buildShareURL()` reads current state:
+   - Determines mix type from `lastMixType` global (`'artist'` or `'tag'`)
    - Artist Mix: `artists[]` names, `trackMode`, `tracksPerArtist`
-   - Tag Mix: tags from `currentMixLabel` or last-generated tag state, `tracksPerTag`
+   - Tag Mix: `lastMixTags` array, `tracksPerTag`
 2. Adds `auto=1` (sharer already generated)
 3. If `navigator.share` is available (mobile): opens native share sheet with `{ title: 'Check out this SpotiMix', url: shareURL }`
 4. If native share unavailable or fails: copies URL to clipboard via `navigator.clipboard.writeText()`
 5. Shows toast: "Link copied!" (clipboard) or no toast (native share handles its own UI)
+
+## State Tracking for Share
+
+Two new globals in `config.js`:
+
+```js
+let lastMixType = null;   // 'artist' or 'tag' — set during generate()/generateTagMix()
+let lastMixTags = [];     // tag names from last Tag Mix — set during generateTagMix()
+```
+
+- `generate()` sets `lastMixType = 'artist'`
+- `generateTagMix()` sets `lastMixType = 'tag'` and `lastMixTags = [...tags]` (before `selectedGenres.clear()`)
+
+This avoids parsing tag names back from `currentMixLabel` which is fragile.
 
 ## Recipient Flow
 
@@ -63,34 +96,51 @@ If both `artists` and `tags` are present, `artists` wins.
 
 A new function `loadFromShareParams()` is called after `userId` is set in both `init()` branches (direct auth + token refresh). It runs after `mergeAndSync` is kicked off.
 
-**Step 1: Parse and clean URL**
-- Read `artists`, `tags`, `mode`, `count`, `tcount`, `auto` from `URLSearchParams`
-- If no share params found, return immediately (normal app load)
+**Step 1: Read share params**
+- Check `sessionStorage.getItem('share_params')` first (persisted through OAuth redirect)
+- Fall back to `window.location.search` (direct visit while already logged in)
+- Parse with `URLSearchParams`
+- If no `artists` or `tags` param found, return immediately (normal app load)
+- Clear `sessionStorage` share_params after reading
 - Clear share params from URL via `window.history.replaceState({}, '', REDIRECT_URI)`
 
 **Step 2a: Artist Mix path (`?artists=...`)**
-1. Split comma-separated names (max 3)
-2. For each name, search Spotify: `spGet('/search?q=' + encodeURIComponent(name) + '&type=artist&limit=1')`
-3. Extract `{ name, image, sub }` from the first result
+1. Split comma-separated names, take first 3
+2. For each name, try/catch: search Spotify `spGet('/search?q=' + encodeURIComponent(name) + '&type=artist&limit=1')`
+3. Extract `{ name, image, sub }` from the first result. If search fails or returns no results, skip that slot and show toast "Couldn't find {name}"
 4. Populate `artists[]` slots, call `renderAllSlots()`, `updateSuggest()`
-5. Set `trackMode` from `mode` param (if valid), `tracksPerArtist` from `count` param (if valid number 1-10)
-6. Update UI controls to reflect the mode/count
-7. If `auto=1`: call `generate()`
+5. Set `trackMode` from `mode` param (if valid: one of `top`, `deep`, `mix`, `discovery`)
+6. Set `tracksPerArtist` from `count` param (if valid number 1-10)
+7. Update UI controls: active button in `#mode-control` segment, `#track-count` text
+8. If `auto=1` and at least 1 artist was found: call `generate()`
 
 **Step 2b: Tag Mix path (`?tags=...`)**
-1. Split comma-separated tags (max 3)
+1. Split comma-separated tags, take first 3
 2. Add each to `selectedGenres` Set
-3. Switch to Browse tab (`switchEntry('browse')`)
-4. Render selected genre chips in the UI
-5. Set `tracksPerTag` from `tcount` param (if valid number 1-10)
-6. If `auto=1`: call `generateTagMix()`
+3. Set `tracksPerTag` from `tcount` param (if valid number 1-10)
+4. Call `setEntry('browse')` — this triggers `loadGenres()` which reads `selectedGenres` when rendering chips, so populating the Set first ensures chips render as selected
+5. If `auto=1`: call `generateTagMix()`
 
 ### Error handling
 
-- Artist search returns no results for a name: skip that slot, show toast "Couldn't find {name}"
+- Artist search fails (network, 429, no results): skip that slot, show toast "Couldn't find {name}"
 - All artists fail: show toast "Couldn't load shared mix", land on empty state
 - Invalid params (bad mode, non-numeric count): ignore, use defaults
-- No share params in URL: function returns immediately, no side effects
+- No share params in URL or sessionStorage: function returns immediately, no side effects
+
+### Timing relative to OAuth
+
+Share param parsing happens **after** OAuth code exchange. The flow is:
+
+```
+init()
+  → exchangeCode(code)          // consumes ?code=, clears URL
+  → spGet('/me')                 // get userId
+  → mergeAndSync(...)            // cloud combo sync
+  → loadFromShareParams()        // reads from sessionStorage (params persisted before auth)
+```
+
+No collision between `?code=` and share params — they never coexist in the URL.
 
 ## Code Changes
 
@@ -98,18 +148,20 @@ A new function `loadFromShareParams()` is called after `userId` is set in both `
 
 | File | Change |
 |------|--------|
-| `js/ui.js` | Add `buildShareURL()`, `handleShare()`, `loadFromShareParams()`. Call `loadFromShareParams()` in both `init()` branches. |
+| `js/config.js` | Add `lastMixType` and `lastMixTags` globals |
+| `js/spotify.js` | Add `sessionStorage.setItem('share_params', ...)` at top of `startAuth()` |
+| `js/ui.js` | Add `buildShareURL()`, `handleShare()`, `loadFromShareParams()`. Set `lastMixType`/`lastMixTags` in `generate()`/`generateTagMix()`. Call `loadFromShareParams()` in both `init()` branches. |
 | `index.html` | Add "Share Mix" button in results area |
 
 ### No new files
 
-All logic fits in `ui.js` alongside existing results-area code.
+All logic fits in existing files.
 
 ### Functions
 
-- **`buildShareURL()`** — Pure function. Reads `artists[]` (or tag state), `trackMode`, `tracksPerArtist`/`tracksPerTag`. Returns a URL string.
+- **`buildShareURL()`** — Pure function. Reads `lastMixType`, `artists[]` or `lastMixTags`, `trackMode`, `tracksPerArtist`/`tracksPerTag`. Returns a URL string.
 - **`handleShare()`** — Calls `buildShareURL()`, then `navigator.share()` or `navigator.clipboard.writeText()`. Shows toast.
-- **`loadFromShareParams()`** — Async. Reads URL params, searches Spotify for artists or populates tags, optionally calls `generate()`/`generateTagMix()`. Called in `init()` after login.
+- **`loadFromShareParams()`** — Async. Reads share params from sessionStorage or URL, searches Spotify for artists or populates tags, optionally calls `generate()`/`generateTagMix()`. Called in `init()` after login.
 
 ## What's NOT in scope
 
