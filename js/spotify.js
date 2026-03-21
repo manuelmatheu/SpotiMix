@@ -292,6 +292,7 @@ async function savePlaylist() {
       }
       if (!addRes.ok) {
         const err = await addRes.json().catch(() => ({}));
+        console.error('Add tracks error body:', JSON.stringify(err));
         throw new Error(`Adding tracks failed (${addRes.status}): ${err?.error?.message || 'unknown'}`);
       }
     }

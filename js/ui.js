@@ -819,6 +819,7 @@ function updateTrackRowHeart(i, liked, animate) {
   const btn = document.getElementById('heart-' + i);
   if (!btn) return;
   btn.classList.toggle('liked', liked);
+  btn.textContent = liked ? '♥' : '♡';
   if (animate) triggerHeartPop(btn);
 }
 
