@@ -143,10 +143,11 @@ async function spDelete(path, body) {
 
 async function checkLikedTracks(trackIds) {
   const liked = new Set();
-  for (let i = 0; i < trackIds.length; i += 50) {
-    const chunk = trackIds.slice(i, i + 50);
+  for (let i = 0; i < trackIds.length; i += 40) {
+    const chunk = trackIds.slice(i, i + 40);
+    const uris = chunk.map(id => encodeURIComponent('spotify:track:' + id)).join(',');
     try {
-      const data = await spGet('/me/tracks/contains?ids=' + chunk.join(','));
+      const data = await spGet('/me/library/contains?uris=' + uris);
       chunk.forEach((id, j) => { if (data[j]) liked.add(id); });
     } catch (e) { console.warn('checkLikedTracks chunk failed:', e); }
   }
