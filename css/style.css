@@ -498,7 +498,7 @@
     .pb-time { font-family: var(--font-m); font-size: 10px; opacity: 0.5; flex-shrink: 0; width: 36px; }
     .pb-time:last-child { text-align: right; }
     .pb-progress {
-      flex: 1; height: 4px; background: rgba(255,255,255,0.15);
+      flex: 1; height: 4px; background: rgba(128,128,128,0.3);
       border-radius: 2px; cursor: pointer; position: relative; overflow: hidden;
     }
     .pb-progress:hover { height: 6px; }
@@ -513,7 +513,7 @@
     .pb-volume-icon { opacity: 0.5; flex-shrink: 0; }
     .pb-volume {
       width: 70px; height: 4px; -webkit-appearance: none; appearance: none;
-      background: rgba(255,255,255,0.15); border-radius: 2px; outline: none;
+      background: rgba(128,128,128,0.3); border-radius: 2px; outline: none;
       cursor: pointer;
     }
     .pb-volume::-webkit-slider-thumb {
