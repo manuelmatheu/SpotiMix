@@ -77,7 +77,7 @@ function saveCombo() {
   const active = artists.filter(Boolean);
   if (active.length < 2) return;
 
-  const combo = { artists: active.map(a => ({ name: a.name, image: a.image || '', sub: a.sub || '' })) };
+  const combo = { artists: active.map(a => ({ name: a.name, image: a.image || '', sub: a.sub || '' })), createdAt: Date.now() };
   // Don't save duplicates
   const key = comboKey(combo);
   if (savedCombos.some(c => comboKey(c) === key)) {
@@ -117,6 +117,7 @@ function updateComboSaveBtn() {
 function renderCombos() {
   const wrap = document.getElementById('combos-scroll');
   if (!wrap) return;
+  savedCombos.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   wrap.innerHTML = savedCombos.map((combo, ci) => {
     const avatars = combo.artists.map(a =>
       a.image
@@ -334,6 +335,7 @@ let selectedGenres = new Set();
 
 function enterHeroMode() {
   document.getElementById('app-section').classList.add('mix-active');
+  document.querySelector('header').classList.add('compact');
   const heroComboBtn = document.querySelector('.btn-save-combo-hero');
   if (heroComboBtn) heroComboBtn.style.display = artists.filter(Boolean).length >= 2 ? '' : 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -343,6 +345,7 @@ function exitHeroMode() {
   const app = document.getElementById('app-section');
   if (!app.classList.contains('mix-active')) return;
   app.classList.remove('mix-active');
+  document.querySelector('header').classList.remove('compact');
   const heroComboBtn = document.querySelector('.btn-save-combo-hero');
   if (heroComboBtn) heroComboBtn.style.display = 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -798,10 +801,6 @@ function renderResults(missingCount) {
       <button class="track-heart" id="heart-${i}" onclick="handleTrackHeart(event,${i})" title="Save to Liked Songs">♡</button>
     </div>`;
   }).join('');
-
-  const name = document.getElementById('username-label').textContent;
-  document.querySelector('.results-title').textContent = name
-    ? `${name}, here's your SpotiMix:` : 'Your SpotiMix';
 
   document.getElementById('results-section').classList.add('visible');
   enterHeroMode();
