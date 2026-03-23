@@ -16,7 +16,6 @@ let accessToken     = null;
 let userId          = null;
 let trackMode       = 'top';
 let tracksPerArtist = 5;
-let showMeta        = false;
 let generatedTracks = [];
 let rawTracks       = {};
 let nowPlayingIndex = -1;

@@ -690,12 +690,6 @@ function adjustTracks(d) {
   document.getElementById('track-count').textContent = tracksPerArtist;
 }
 
-function toggleMeta(btn) {
-  showMeta = !showMeta;
-  btn.classList.toggle('on', showMeta);
-  document.getElementById('track-list').classList.toggle('show-meta', showMeta);
-}
-
 // ── Generate ──────────────────────────────────────────────────────────────────
 async function generate() {
   const active = artists.filter(Boolean);
@@ -780,7 +774,7 @@ function renderResults(missingCount) {
   warn.textContent = missingCount > 0
     ? `${missingCount} track${missingCount > 1 ? 's' : ''} not found on Spotify` : '';
 
-  list.className = 'track-list' + (showMeta ? ' show-meta' : '');
+  list.className = 'track-list';
   list.innerHTML = generatedTracks.map((t, i) => {
     const imgEl = t.albumArt
       ? `<img class="track-thumb" src="${esc(t.albumArt)}" alt="" />`

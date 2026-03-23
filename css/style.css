@@ -98,8 +98,8 @@
     #app-section { display: none; }
     #app-section.visible { display: block; }
 
-    .user-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--tape-bg); border-radius: var(--r); border: 1px solid var(--border); margin-bottom: 32px; }
-    .user-bar-left { display: flex; align-items: center; gap: 8px; font-family: var(--font-m); font-size: 11px; opacity: 0.65; }
+    .user-bar { position: absolute; bottom: 0; right: 0; display: flex; align-items: center; gap: 10px; }
+    .user-bar-left { display: flex; align-items: center; gap: 8px; font-family: var(--font-m); font-size: 11px; opacity: 0.55; }
     .user-dot { width: 7px; height: 7px; border-radius: 50%; background: #1DB954; box-shadow: 0 0 0 2px rgba(29,185,84,0.25); }
 
     .section-label { font-family: var(--font-m); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.4; margin-bottom: 12px; }
@@ -183,7 +183,7 @@
       .logo { font-size: clamp(36px,10vw,52px); }
       .theme-toggle { top: 36px; }
 
-      .user-bar { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+      .user-bar { position: static; margin-top: 12px; }
 
       .artist-slot.filled { box-shadow: 2px 2px 0 var(--card-shadow); }
       .autocomplete-dropdown { box-shadow: 2px 2px 0 var(--card-shadow); }
@@ -269,7 +269,7 @@
 
     /* Options */
     .options-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; padding: 16px 18px; background: var(--tape-bg); border-radius: var(--r); border: 1px solid var(--border-s); }
-    .option-group { display: flex; flex-direction: column; gap: 6px; }
+    .option-group { display: flex; flex-direction: column; align-items: center; gap: 6px; }
     .option-group-label { font-family: var(--font-m); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.45; }
 
     .seg-control { display: flex; background: var(--num-bg); border-radius: 3px; padding: 2px; gap: 2px; }
@@ -281,12 +281,6 @@
     .num-btn:hover { background: var(--num-hover); }
     .num-value { font-family: var(--font-m); font-size: 12px; font-weight: 500; width: 28px; text-align: center; }
 
-    .toggle-row { display: flex; align-items: center; gap: 8px; }
-    .toggle { position: relative; width: 32px; height: 18px; background: var(--toggle-bg); border-radius: 9px; cursor: pointer; border: none; transition: background 200ms; flex-shrink: 0; }
-    .toggle.on { background: var(--sage); }
-    .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: white; transition: transform 200ms; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-    .toggle.on::after { transform: translateX(14px); }
-    .toggle-label { font-family: var(--font-m); font-size: 10px; opacity: 0.55; }
 
     .generate-area { margin-bottom: 36px; }
     .generate-row { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -414,7 +408,6 @@
     .track-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .track-artist { font-size: 11px; opacity: 0.45; font-family: var(--font-m); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .track-scrobbles { font-family: var(--font-m); font-size: 10px; color: var(--rust); opacity: 0.7; margin-top: 2px; display: none; }
-    .show-meta .track-scrobbles { display: block; }
     .track-badge { font-family: var(--font-m); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; flex-shrink: 0; }
     .badge-top  { background: var(--gold); color: var(--bg); }
     .badge-deep { background: var(--sage); color: #fff; }

@@ -21,6 +21,13 @@
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
       <span class="theme-icon">☽</span>
     </button>
+    <div class="user-bar">
+      <div class="user-bar-left">
+        <div class="user-dot"></div>
+        <span id="username-label">Connected</span>
+      </div>
+      <button class="btn btn-ghost" onclick="logout()" style="padding:4px 8px;font-size:10px;">Disconnect</button>
+    </div>
   </header>
 
   <section id="auth-section">
@@ -32,14 +39,6 @@
   </section>
 
   <section id="app-section">
-    <div class="user-bar">
-      <div class="user-bar-left">
-        <div class="user-dot"></div>
-        <span id="username-label">Connected</span>
-      </div>
-      <button class="btn btn-ghost" onclick="logout()" style="padding:4px 8px;font-size:10px;">Disconnect</button>
-    </div>
-
     <div class="error-msg" id="error-msg"></div>
 
     <div class="entry-header">
@@ -110,13 +109,6 @@
           <button class="num-btn" onclick="adjustTracks(-1)">−</button>
           <span class="num-value" id="track-count">5</span>
           <button class="num-btn" onclick="adjustTracks(1)">+</button>
-        </div>
-      </div>
-      <div class="option-group">
-        <span class="option-group-label">Last.fm data</span>
-        <div class="toggle-row">
-          <button class="toggle" id="meta-toggle" onclick="toggleMeta(this)"></button>
-          <span class="toggle-label">Show play counts</span>
         </div>
       </div>
     </div>
