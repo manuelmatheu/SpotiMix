@@ -1298,6 +1298,7 @@ async function init() {
     try {
       const me = await spGet('/me');
       userId = me.id;
+      userCountry = me.country || 'US';
       document.getElementById('username-label').textContent = me.display_name || me.id;
       document.getElementById('auth-section').classList.add('hidden');
       document.getElementById('app-section').classList.add('visible');
@@ -1313,6 +1314,7 @@ async function init() {
         try {
           const me = await spGet('/me');
           userId = me.id;
+          userCountry = me.country || 'US';
           document.getElementById('username-label').textContent = me.display_name || me.id;
           document.getElementById('auth-section').classList.add('hidden');
           document.getElementById('app-section').classList.add('visible');

@@ -14,6 +14,7 @@ const SCOPES = [
 // ── State ─────────────────────────────────────────────────────────────────────
 let accessToken     = null;
 let userId          = null;
+let userCountry     = 'US';
 let trackMode       = 'top';
 let tracksPerArtist = 5;
 let generatedTracks = [];

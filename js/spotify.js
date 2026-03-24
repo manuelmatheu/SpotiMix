@@ -103,7 +103,7 @@ async function getSpotifyTopTracks(artistName, spotifyId) {
   try {
     const id = spotifyId || await resolveSpotifyId(artistName);
     if (!id) return [];
-    const data = await spGet(`/artists/${id}/top-tracks?market=from_token`);
+    const data = await spGet(`/artists/${id}/top-tracks?market=${userCountry || 'US'}`);
     const tracks = data.tracks || [];
     return tracks.map(t => ({
       uri:        t.uri,
