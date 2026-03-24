@@ -90,21 +90,15 @@ async function spGet(path) {
   return r.json();
 }
 
-async function resolveSpotifyId(artistName) {
+async function getSpotifyTopTracks(artistName) {
   try {
-    const data = await spGet(`/search?type=artist&q=${encodeURIComponent(artistName)}&limit=3`);
-    const items = data.artists?.items || [];
-    const item = items.find(a => norm(a.name) === norm(artistName)) || items[0];
-    return item?.id || null;
-  } catch { return null; }
-}
-
-async function getSpotifyTopTracks(artistName, spotifyId) {
-  try {
-    const id = spotifyId || await resolveSpotifyId(artistName);
-    if (!id) return [];
-    const data = await spGet(`/artists/${id}/top-tracks?market=${userCountry || 'US'}`);
-    const tracks = data.tracks || [];
+    const q = encodeURIComponent('artist:' + artistName);
+    const data = await spGet(`/search?type=track&q=${q}&limit=10`);
+    const items = data.tracks?.items || [];
+    // Prefer tracks where the artist name matches exactly
+    const normName = norm(artistName);
+    const filtered = items.filter(t => t.artists.some(a => norm(a.name) === normName));
+    const tracks = filtered.length ? filtered : items;
     return tracks.map(t => ({
       uri:        t.uri,
       name:       t.name,

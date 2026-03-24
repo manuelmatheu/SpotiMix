@@ -718,7 +718,7 @@ async function generate() {
       // Spotify top tracks only — popularity-ranked, no matchToSpotify needed
       setProgress(10, 'Fetching top tracks from Spotify…');
       const results = await Promise.all(
-        active.map(a => getSpotifyTopTracks(a.name, a.spotifyId || null))
+        active.map(a => getSpotifyTopTracks(a.name))
       );
       results.forEach((tracks, i) => {
         const sliced = tracks.slice(0, tracksPerArtist).map(t => ({ ...t, _artist: active[i].name }));
@@ -739,7 +739,7 @@ async function generate() {
       // Half Spotify top tracks + half Last.fm deep cuts, fetched in parallel
       setProgress(10, 'Fetching tracks from both sources…');
       const [spotifyResults, ...lfmResults] = await Promise.all([
-        Promise.all(active.map(a => getSpotifyTopTracks(a.name, a.spotifyId || null))),
+        Promise.all(active.map(a => getSpotifyTopTracks(a.name))),
         ...active.map(a => getTracksForArtist(a, 'deep')),
       ]);
       spotifyResults.forEach((tracks, i) => {
@@ -765,7 +765,7 @@ async function generate() {
       const BATCH = 3;
       for (let i = 0; i < similarNames.length; i += BATCH) {
         const batch = similarNames.slice(i, i + BATCH);
-        const results = await Promise.all(batch.map(name => getSpotifyTopTracks(name, null)));
+        const results = await Promise.all(batch.map(name => getSpotifyTopTracks(name)));
         results.forEach((tracks, j) => {
           const picked = tracks.slice(0, 2).map(t => ({ ...t, _artist: batch[j], _type: 'discovery' }));
           spotifyDirect.push(...picked);
